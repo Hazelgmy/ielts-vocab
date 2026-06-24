@@ -442,7 +442,138 @@
           padding: 10px 4px;
         }
       }
-</style>
+	  /* ====== Supabase 统计栏 ====== */
+	  .supabase-bar {
+	    grid-column: 1 / -1;
+	    display: flex;
+	    gap: 16px;
+	    align-items: center;
+	    flex-wrap: wrap;
+	    background: #f0fdf4;
+	    border: 1px solid #bbf7d0;
+	    border-radius: 10px;
+	    padding: 12px 18px;
+	  }
+
+	  .supabase-bar .stat-item {
+	    font-size: 13px;
+	    color: #166534;
+	    white-space: nowrap;
+	  }
+
+	  .supabase-bar .stat-item strong {
+	    font-size: 18px;
+	    color: #15803d;
+	  }
+
+	  .supabase-bar .date-picker {
+	    padding: 6px 10px;
+	    border: 1px solid #86efac;
+	    border-radius: 6px;
+	    font-size: 13px;
+	    outline: none;
+	    font-family: inherit;
+	    color: #166534;
+	    background: #fff;
+	    cursor: pointer;
+	  }
+
+	  .supabase-bar .date-picker:focus {
+	    border-color: #22c55e;
+	  }
+
+	  .supabase-bar .btn-today {
+	    padding: 6px 14px;
+	    background: #fff;
+	    border: 1px solid #86efac;
+	    border-radius: 6px;
+	    font-size: 13px;
+	    color: #166534;
+	    cursor: pointer;
+	    white-space: nowrap;
+	    transition: all 0.2s;
+	  }
+
+	  .supabase-bar .btn-today:hover {
+	    background: #dcfce7;
+	    border-color: #22c55e;
+	  }
+
+	  .supabase-bar .history-badge {
+	    font-size: 11px;
+	    background: #fef3c7;
+	    color: #92400e;
+	    padding: 3px 8px;
+	    border-radius: 10px;
+	    white-space: nowrap;
+	  }
+
+	  .supabase-input {
+	    width: 180px;
+	    padding: 7px 10px;
+	    border: 1px solid #ddd;
+	    border-radius: 6px;
+	    font-size: 13px;
+	    outline: none;
+	    transition: border-color 0.2s;
+	  }
+
+	  .supabase-input:focus {
+	    border-color: #3C3489;
+	  }
+
+	  /* Supabase 配置行 */
+	  .supabase-config-row {
+	    display: flex;
+	    gap: 8px;
+	    align-items: center;
+	    flex-wrap: wrap;
+	  }
+
+	  .supabase-config-row label {
+	    font-size: 11px;
+	    color: #888;
+	    white-space: nowrap;
+	  }
+
+	  /* ====== 手机端：Supabase 栏 ====== */
+	  @media (max-width: 768px) {
+	    .supabase-bar {
+	      flex-direction: column;
+	      align-items: stretch;
+	      gap: 8px;
+	      padding: 10px 12px;
+	    }
+
+	    .supabase-bar .stat-item {
+	      text-align: center;
+	    }
+
+	    .supabase-bar .date-picker {
+	      width: 100%;
+	      height: 44px;
+	      font-size: 16px;
+	    }
+
+	    .supabase-bar .btn-today {
+	      height: 44px;
+	      font-size: 16px;
+	    }
+
+	    .supabase-input {
+	      width: 100%;
+	      min-width: 0;
+	      height: 44px;
+	      font-size: 16px;
+	    }
+
+	    .supabase-config-row {
+	      flex-direction: column;
+	      align-items: stretch;
+	    }
+	  }
+	</style>
+	<!-- Supabase JS 库将在首次需要时动态加载，避免阻塞核心功能 -->
 </head>
 <body>
 <div class="container">
@@ -454,11 +585,26 @@
     个人 DeepSeek → Endpoint: https://api.deepseek.com/v1/chat/completions  格式: OpenAI (Bearer)
     切换时需要同步改下面 JS 中 callAPI() 的 headers 和 body 格式，搜索 "API 格式切换点"
   -->
+    <!-- sk-HD8xmuAHbN5toEGtGYYTiA -->
   <div class="config-bar">
     <label>API Key</label>
-    <input type="password" id="apiKey" value="sk-HD8xmuAHbN5toEGtGYYTiA" placeholder="sk-xxxxxxxxxxxxxxxx">
+    <input type="password" id="apiKey" value="sk-ed8ec76db0f94f1aa2356a095d0322a7" placeholder="sk-xxxxxxxxxxxxxxxx">
     <label>Endpoint</label>
-    <input type="text" id="apiEndpoint" value="http://192.168.27.4:18888/v1/messages" placeholder="http://192.168.27.4:18888/v1/messages">
+    <input type="text" id="apiEndpoint" value="https://api.deepseek.com/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
+    <span style="color:#ccc;margin:0 4px;">|</span>
+    <label>Supabase URL</label>
+    <input type="text" class="supabase-input" id="supabaseUrl" value="https://fxutrnscikdmfsb.supabase.co" placeholder="https://xxxxx.supabase.co">
+    <label>Key</label>
+    <input type="password" class="supabase-input" id="supabaseKey" value="sb_publishable__k9dnipeYsxDsIJI3QqsLg_kG8_rLxi" placeholder="eyJhbGci...">
+  </div>
+
+  <!-- ====== Supabase 统计 & 历史栏 ====== -->
+  <div class="supabase-bar">
+    <span class="stat-item">📅 已学 <strong id="statDays">0</strong> 天</span>
+    <span class="stat-item">📝 累计词汇 <strong id="statWords">0</strong> 个</span>
+    <input type="date" class="date-picker" id="datePicker" title="选择日期查看历史记录">
+    <button class="btn-today" id="btnToday" onclick="goToday()">📋 回到今天</button>
+    <span class="history-badge" id="historyBadge" style="display:none">查看历史</span>
   </div>
 
   <!-- ====== 左栏 ====== -->
@@ -526,9 +672,234 @@ const statusMsg = document.getElementById('statusMsg');
 const btnTranslate = document.getElementById('btnTranslate');
 const translationBox = document.getElementById('translationBox');
 
+const supabaseUrlInput = document.getElementById('supabaseUrl');
+const supabaseKeyInput = document.getElementById('supabaseKey');
+const datePicker = document.getElementById('datePicker');
+const statDays = document.getElementById('statDays');
+const statWords = document.getElementById('statWords');
+const historyBadge = document.getElementById('historyBadge');
+const btnToday = document.getElementById('btnToday');
+
 let activeKey = null;
 let translationVisible = false;
 let translationLoaded = false;
+let supabase = null;
+let supabaseLoaded = false;
+let isViewingHistory = false;
+
+// ========== Supabase 动态加载（不阻塞核心功能） ==========
+function loadSupabaseScript() {
+  return new Promise((resolve) => {
+    if (supabaseLoaded && window.supabase) { resolve(true); return; }
+    const script = document.createElement('script');
+    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js';
+    script.onload = () => { supabaseLoaded = true; resolve(true); };
+    script.onerror = () => { console.warn('Supabase CDN 加载失败，存档功能不可用'); resolve(false); };
+    document.head.appendChild(script);
+  });
+}
+
+// ========== Supabase 初始化 ==========
+async function getSupabase() {
+  const url = supabaseUrlInput.value.trim();
+  const key = supabaseKeyInput.value.trim();
+  if (!url || !key || !url.startsWith('http')) return null;
+
+  // 动态加载 Supabase 库
+  if (!window.supabase) {
+    const loaded = await loadSupabaseScript();
+    if (!loaded) return null;
+  }
+
+  if (!supabase || supabase.supabaseUrl !== url) {
+    try {
+      supabase = window.supabase.createClient(url, key);
+      console.log('Supabase 已连接:', url);
+    } catch (e) {
+      console.error('Supabase 初始化失败:', e);
+      return null;
+    }
+  }
+  return supabase;
+}
+
+// ========== 获取今天的日期字符串 ==========
+function todayStr() {
+  const d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+
+// ========== 本地存储（主存储，离线可用） ==========
+const STORAGE_KEY = 'ielts_vocab_records';
+
+function loadLocalRecords() {
+  try {
+    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+  } catch (e) {
+    return {};
+  }
+}
+
+function saveLocalRecords(records) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+}
+
+// ========== 存储每日记录（本地优先 + Supabase 云端同步）==========
+async function saveDailyRecord(words, articleText, articleTitle) {
+  const date = todayStr();
+  const wordsStr = words.join(',');
+  const articleFull = articleTitle + '\n\n' + articleText;
+
+  // 1) 始终存本地
+  const records = loadLocalRecords();
+  records[date] = { words: wordsStr, article: articleFull };
+  saveLocalRecords(records);
+  console.log('本地已保存:', date);
+
+  // 2) 尝试同步到 Supabase（失败静默跳过）
+  const sb = await getSupabase();
+  if (!sb) return;
+  try {
+    const { data: existing } = await sb.from('daily_records').select('id').eq('date', date).limit(1);
+    if (existing && existing.length > 0) {
+      await sb.from('daily_records').update({ words: wordsStr, article: articleFull }).eq('date', date);
+    } else {
+      await sb.from('daily_records').insert({ date, words: wordsStr, article: articleFull });
+    }
+    console.log('Supabase 已同步:', date);
+  } catch (err) {
+    console.warn('Supabase 同步失败（本地已保存）:', err.message);
+  }
+
+  updateStats();
+}
+
+// ========== 根据日期加载历史记录（本地优先）==========
+async function loadHistoryRecord(date) {
+  // 1) 先查本地
+  const records = loadLocalRecords();
+  const local = records[date];
+  if (local) {
+    displayRecord(date, local.words, local.article);
+    return;
+  }
+
+  // 2) 本地没有，尝试 Supabase
+  const sb = await getSupabase();
+  if (!sb) { alert(`${date} 没有学习记录（Supabase 未配置）`); return; }
+
+  try {
+    const { data, error } = await sb.from('daily_records').select('*').eq('date', date).limit(1);
+    if (error) throw error;
+    if (data && data.length > 0) {
+      displayRecord(date, data[0].words, data[0].article);
+      // 回写到本地
+      records[date] = { words: data[0].words, article: data[0].article };
+      saveLocalRecords(records);
+    } else {
+      alert(`${date} 没有学习记录`);
+    }
+  } catch (err) {
+    console.error('Supabase 查询失败:', err.message);
+    alert(`${date} 没有学习记录（网络不可用）`);
+  }
+}
+
+function displayRecord(date, wordsStr, articleStr) {
+  const words = wordsStr.split(',').map(w => w.trim()).filter(Boolean);
+  document.getElementById('vocabInput').value = words.join(', ');
+
+  const articleLines = articleStr.split('\n');
+  const title = articleLines[0] || '';
+  let bodyStart = 1;
+  while (bodyStart < articleLines.length && articleLines[bodyStart].trim() === '') {
+    bodyStart++;
+  }
+  const articleBody = articleLines.slice(bodyStart).join('\n') || '';
+
+  storyTitle.textContent = title;
+  const paragraphs = articleBody.split(/\n\s*\n/).filter(p => p.trim());
+  storyContent.innerHTML = paragraphs.length > 0
+    ? paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('\n')
+    : articleBody.replace(/\n/g, '<br>');
+
+  buildVocabGridFromList(words);
+  hideCard();
+  btnTranslate.style.display = 'inline-block';
+  translationBox.style.display = 'none';
+  translationVisible = false;
+  translationLoaded = false;
+  wrapPlainWords();
+
+  isViewingHistory = true;
+  historyBadge.style.display = 'inline-block';
+  historyBadge.textContent = `📅 ${date} 的记录`;
+  datePicker.value = date;
+  setStatus(`已加载 ${date} 的记录，包含 ${words.length} 个词汇`, '#166534');
+}
+
+// ========== 从词汇列表构建速查区 ==========
+function buildVocabGridFromList(words) {
+  vocabData = {};
+  words.forEach(w => {
+    const key = w.toLowerCase();
+    if (!vocabData[key]) {
+      vocabData[key] = { phonetic: '', meaning: '历史词汇 — 点击查看释义', example: '' };
+    }
+  });
+  buildVocabGrid();
+  bindWordClicks();
+}
+
+// ========== 更新统计（本地优先） ==========
+async function updateStats() {
+  const records = loadLocalRecords();
+  const dates = Object.keys(records);
+  statDays.textContent = dates.length;
+  let totalWords = 0;
+  dates.forEach(d => {
+    totalWords += records[d].words.split(',').filter(w => w.trim()).length;
+  });
+  statWords.textContent = totalWords;
+
+  // 后台尝试从 Supabase 补全统计（不计入主流程）
+  const sb = await getSupabase();
+  if (!sb) return;
+  try {
+    const { data } = await sb.from('daily_records').select('*');
+    if (data) {
+      const allDates = new Set(dates);
+      data.forEach(r => { allDates.add(r.date); });
+      statDays.textContent = allDates.size;
+      const wc = new Map();
+      dates.forEach(d => { wc.set(d, records[d].words.split(',').filter(w => w.trim()).length); });
+      data.forEach(r => { wc.set(r.date, r.words.split(',').filter(w => w.trim()).length); });
+      let tw = 0; wc.forEach(v => { tw += v; });
+      statWords.textContent = tw;
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// ========== 回到今天 ==========
+function goToday() {
+  isViewingHistory = false;
+  historyBadge.style.display = 'none';
+  datePicker.value = '';
+  storyTitle.textContent = '';
+  storyContent.innerHTML = '';
+  vocabData = {};
+  buildVocabGrid();
+  bindWordClicks();
+  hideCard();
+  btnTranslate.style.display = 'none';
+  translationBox.style.display = 'none';
+  translationVisible = false;
+  translationLoaded = false;
+  document.getElementById('vocabInput').value = '';
+  setStatus('已回到今天，输入词汇开始学习吧', '#3C3489');
+}
 
 // ========== 释义卡片逻辑 ==========
 function showCard(key) {
@@ -607,34 +978,34 @@ async function callAPI(systemPrompt, userPrompt, temperature = 0.3) {
   const apiKey = document.getElementById('apiKey').value.trim();
   const apiEndpoint = document.getElementById('apiEndpoint').value.trim();
 
-  // ---- 公司内网 (Anthropic 格式) ----
-  const headers = {
-    'Content-Type': 'application/json',
-    'x-api-key': apiKey,
-    'anthropic-version': '2023-06-01'
-  };
-  const body = JSON.stringify({
-    model: 'corp-dgov/anthropic/deepseek-v4-flash',
-    system: systemPrompt,
-    messages: [{ role: 'user', content: userPrompt }],
-    temperature: temperature,
-    max_tokens: 4096
-  });
-
-  // ---- 个人 DeepSeek (OpenAI 格式) 切换时替换上面 ----
+  // // ---- 公司内网 (Anthropic 格式) ----
   // const headers = {
   //   'Content-Type': 'application/json',
-  //   'Authorization': `Bearer ${apiKey}`
+  //   'x-api-key': apiKey,
+  //   'anthropic-version': '2023-06-01'
   // };
   // const body = JSON.stringify({
-  //   model: 'deepseek-chat',
-  //   messages: [
-  //     { role: 'system', content: systemPrompt },
-  //     { role: 'user', content: userPrompt }
-  //   ],
+  //   model: 'corp-dgov/anthropic/deepseek-v4-flash',
+  //   system: systemPrompt,
+  //   messages: [{ role: 'user', content: userPrompt }],
   //   temperature: temperature,
   //   max_tokens: 4096
   // });
+
+  // ---- 个人 DeepSeek (OpenAI 格式) 切换时替换上面 ----
+  const headers = {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${apiKey}`
+  };
+  const body = JSON.stringify({
+    model: 'deepseek-chat',
+    messages: [
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: userPrompt }
+    ],
+    temperature: temperature,
+    max_tokens: 4096
+  });
 
   const response = await fetch(apiEndpoint, {
     method: 'POST',
@@ -650,13 +1021,31 @@ async function callAPI(systemPrompt, userPrompt, temperature = 0.3) {
   const result = await response.json();
   let content;
   if (result.content) {
-    const textBlock = result.content.find(b => b.type === 'text');
-    content = textBlock ? textBlock.text : null;
+    // 推理模型可能只返回 thinking，依次回退
+    let textBlock = result.content.find(b => b.type === 'text');
+    if (!textBlock) textBlock = result.content.find(b => b.type === 'thinking');
+    if (!textBlock) textBlock = result.content.find(b => b.type === 'output');
+    if (!textBlock) textBlock = result.content.find(b => b.text || b.thinking || b.content);
+    content = textBlock ? (textBlock.text || textBlock.thinking || textBlock.content || '') : null;
   } else if (result.choices && result.choices[0]) {
     content = result.choices[0].message.content;
   }
   if (!content) throw new Error('无法解析 API 返回格式');
   return content.trim();
+}
+
+
+// ========== 从混杂文本中提取 JSON（推理模型会把思路和JSON混在一起） ==========
+function extractJSON(text) {
+  // 先去掉可能的代码围栏
+  let cleaned = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+  // 找到第一个 { 和最后一个 }，截取纯 JSON
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end > start) {
+    cleaned = cleaned.slice(start, end + 1);
+  }
+  return cleaned;
 }
 
 // ========== AI 生成文章 ==========
@@ -708,7 +1097,7 @@ Rules:
   try {
     const content = await callAPI(systemPrompt, userPrompt, 0.8);
 
-    let jsonStr = content.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+    let jsonStr = extractJSON(content);
     const data = JSON.parse(jsonStr);
 
     const paragraphs = data.paragraphs.map(p =>
@@ -719,6 +1108,17 @@ Rules:
 
     vocabData = data.vocab;
     renderArticle(data.title, paragraphs);
+
+    // 自动存档到 Supabase
+    const articlePlain = data.paragraphs
+      .map(p => p.replace(/<<(\w+)>>/g, '$1'))
+      .join('\n\n');
+    saveDailyRecord(words, articlePlain, data.title);
+
+    isViewingHistory = false;
+    historyBadge.style.display = 'none';
+    datePicker.value = '';
+
     setStatus(`已生成，包含 ${Object.keys(data.vocab).length} 个词汇`, '#2a7d2a');
 
   } catch (err) {
@@ -789,7 +1189,7 @@ async function lookupWord(word) {
   try {
     const systemPrompt = 'You are a dictionary. Respond with ONLY valid JSON: {"phonetic":"/.../","meaning":"中文释义","example":"An English example sentence using the word."}';
     const content = await callAPI(systemPrompt, `Define the word: "${word}"`);
-    const jsonStr = content.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+    const jsonStr = extractJSON(content);
     const data = JSON.parse(jsonStr);
 
     cardPhonetic.textContent = data.phonetic || '';
@@ -840,9 +1240,23 @@ function setStatus(text, color, showSpinner) {
     : text;
 }
 
+// ========== 日期选择器：切换历史记录 ==========
+datePicker.addEventListener('change', () => {
+  const selectedDate = datePicker.value;
+  if (!selectedDate) return;
+  if (selectedDate === todayStr()) {
+    goToday();
+    return;
+  }
+  loadHistoryRecord(selectedDate);
+});
+
 // ========== 初始绑定 ==========
 bindWordClicks();
 buildVocabGrid();
+
+// 页面加载时初始化统计
+setTimeout(() => { updateStats(); }, 500);
 </script>
 </body>
 </html>
