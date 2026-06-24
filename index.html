@@ -318,6 +318,130 @@
   }
 
   @keyframes spin { to { transform: rotate(360deg); } }
+
+      /* ====== 手机端响应式 ====== */
+      @media (max-width: 768px) {
+        body {
+          padding: 12px;
+        }
+
+        .container {
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        /* 右栏取消 sticky，正常流式排列 */
+        .right-col {
+          position: static;
+        }
+
+        /* API 配置栏：上下排列 */
+        .config-bar {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 6px;
+        }
+
+        .config-bar label {
+          margin-top: 6px;
+        }
+
+        .config-bar label:first-child {
+          margin-top: 0;
+        }
+
+        .config-bar input {
+          width: 100%;
+          min-width: 0;
+          height: 44px;
+          font-size: 16px;
+        }
+
+        /* 输入区域 */
+        .input-section {
+          padding: 12px;
+          margin-bottom: 20px;
+        }
+
+        .input-section textarea {
+          height: 88px;
+          font-size: 16px;
+        }
+
+        .input-row {
+          flex-direction: column;
+          align-items: stretch;
+          gap: 8px;
+        }
+
+        .btn-generate {
+          width: 100%;
+          height: 44px;
+          font-size: 16px;
+        }
+
+        .input-hint {
+          text-align: center;
+          font-size: 12px;
+        }
+
+        .status-msg {
+          text-align: center;
+          margin-left: 0;
+        }
+
+        /* 标题 */
+        .title-row {
+          flex-direction: column;
+          align-items: flex-start;
+          gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        .story-title {
+          font-size: 20px;
+        }
+
+        .btn-translate {
+          height: 44px;
+          font-size: 16px;
+        }
+
+        /* 正文 */
+        .story-content {
+          font-size: 14px;
+          line-height: 1.8;
+          margin-bottom: 20px;
+        }
+
+        /* 释义卡片 */
+        .card {
+          padding: 16px 18px;
+        }
+
+        .card-word {
+          font-size: 24px;
+        }
+
+        .card-meaning {
+          font-size: 14px;
+        }
+
+        .card-example {
+          font-size: 14px;
+        }
+
+        /* 词汇速查：每行 3 个 */
+        .vocab-grid {
+          grid-template-columns: repeat(3, 1fr);
+          gap: 6px;
+        }
+
+        .vocab-chip {
+          font-size: 12px;
+          padding: 10px 4px;
+        }
+      }
 </style>
 </head>
 <body>
