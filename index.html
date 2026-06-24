@@ -1,0 +1,724 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>雅思词汇记忆卡片</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background: #fff;
+    color: #333;
+    display: flex;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .container {
+    max-width: 1100px;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  /* ====== 顶栏：API 配置 ====== */
+  .config-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 0;
+    align-items: center;
+    flex-wrap: wrap;
+    grid-column: 1 / -1;
+  }
+
+  .config-bar label {
+    font-size: 12px;
+    color: #888;
+    white-space: nowrap;
+  }
+
+  .config-bar input {
+    flex: 1;
+    min-width: 140px;
+    padding: 7px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .config-bar input:focus {
+    border-color: #3C3489;
+  }
+
+  /* ====== 左右两栏 ====== */
+  .left-col {
+    min-width: 0;
+  }
+
+  .right-col {
+    position: sticky;
+    top: 20px;
+    min-width: 0;
+  }
+
+  /* ====== 输入区域 ====== */
+  .input-section {
+    background: #f9f9fb;
+    border: 1px solid #e8e8ed;
+    border-radius: 10px;
+    padding: 20px;
+    margin-bottom: 32px;
+  }
+
+  .input-section textarea {
+    width: 100%;
+    height: 72px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    padding: 10px 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .input-section textarea:focus {
+    border-color: #3C3489;
+  }
+
+  .input-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 12px;
+  }
+
+  .btn-generate {
+    padding: 9px 22px;
+    background: #3C3489;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s;
+    white-space: nowrap;
+  }
+
+  .btn-generate:hover { background: #2d266e; }
+  .btn-generate:disabled { background: #a099d4; cursor: not-allowed; }
+
+  .input-hint {
+    font-size: 12px;
+    color: #999;
+  }
+
+  .status-msg {
+    font-size: 13px;
+    color: #3C3489;
+    margin-left: 8px;
+    display: none;
+  }
+
+  /* ====== 故事标题 ====== */
+  .story-title {
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a1a1a;
+    line-height: 1.5;
+    margin-bottom: 0;
+  }
+
+  .title-row {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+  }
+
+  .btn-translate {
+    padding: 6px 14px;
+    background: #fff;
+    border: 1px solid #d0d0d0;
+    border-radius: 6px;
+    font-size: 13px;
+    color: #666;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .btn-translate:hover {
+    border-color: #a099d4;
+    color: #3C3489;
+    background: #f8f7ff;
+  }
+
+  /* ====== 故事正文 ====== */
+  .story-content {
+    font-size: 15px;
+    line-height: 1.9;
+    color: #444;
+    margin-bottom: 32px;
+  }
+
+  .story-content p { margin-bottom: 18px; }
+
+  /* 高亮词汇 */
+  .word {
+    background: #EEEDFE;
+    color: #3C3489;
+    padding: 2px 6px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: background 0.2s, color 0.2s;
+  }
+
+  .word:hover {
+    background: #3C3489;
+    color: #fff;
+  }
+
+  .word.active {
+    background: #3C3489;
+    color: #fff;
+  }
+
+  /* 普通单词可点击 */
+  .clickable-word {
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+
+  .clickable-word:hover {
+    background: #EEEDFE;
+    color: #3C3489;
+    border-radius: 2px;
+    padding: 1px 3px;
+    margin: 0 -3px;
+  }
+
+  /* ====== 翻译结果 ====== */
+  .translation-box {
+    background: #FFFBEB;
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 24px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: #555;
+  }
+
+  /* ====== 释义卡片 ====== */
+  .card-wrapper {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.4s ease;
+    margin-bottom: 0;
+  }
+
+  .card-wrapper.show {
+    max-height: 500px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: #f7f7f8;
+    border: 1px solid #e0e0e0;
+    border-radius: 12px;
+    padding: 24px 28px;
+  }
+
+  .card-word {
+    font-size: 28px;
+    font-weight: 700;
+    color: #3C3489;
+    margin-bottom: 6px;
+  }
+
+  .card-phonetic {
+    font-size: 15px;
+    color: #888;
+    margin-bottom: 12px;
+  }
+
+  .card-meaning {
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 12px;
+    line-height: 1.6;
+  }
+
+  .card-example {
+    font-size: 15px;
+    color: #555;
+    font-style: italic;
+    line-height: 1.6;
+    border-left: 3px solid #EEEDFE;
+    padding-left: 12px;
+  }
+
+  /* ====== 底部 ====== */
+  .section-label {
+    font-size: 13px;
+    color: #999;
+    margin-bottom: 12px;
+    letter-spacing: 1px;
+  }
+
+  .vocab-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .vocab-chip {
+    padding: 8px 4px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 13px;
+    cursor: pointer;
+    color: #3C3489;
+    background: #fff;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .vocab-chip:hover,
+  .vocab-chip.active {
+    background: #EEEDFE;
+    border-color: #3C3489;
+    color: #3C3489;
+  }
+
+  /* ====== 加载动画 ====== */
+  .spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ccc;
+    border-top-color: #3C3489;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- ====== API 配置栏 ====== -->
+  <!--
+    切换 API 看这里：
+    公司内网 → Endpoint: http://192.168.27.4:18888/v1/messages   格式: Anthropic (x-api-key)
+    个人 DeepSeek → Endpoint: https://api.deepseek.com/v1/chat/completions  格式: OpenAI (Bearer)
+    切换时需要同步改下面 JS 中 callAPI() 的 headers 和 body 格式，搜索 "API 格式切换点"
+  -->
+  <div class="config-bar">
+    <label>API Key</label>
+    <input type="password" id="apiKey" value="sk-HD8xmuAHbN5toEGtGYYTiA" placeholder="sk-xxxxxxxxxxxxxxxx">
+    <label>Endpoint</label>
+    <input type="text" id="apiEndpoint" value="http://192.168.27.4:18888/v1/messages" placeholder="http://192.168.27.4:18888/v1/messages">
+  </div>
+
+  <!-- ====== 左栏 ====== -->
+  <div class="left-col">
+
+    <!-- 词汇输入区 -->
+    <div class="input-section">
+      <textarea id="vocabInput" placeholder="输入词汇，用英文逗号或空格分隔，例如：&#10;peacock, magnificent, vivid, creature, plumage"></textarea>
+      <div class="input-row">
+        <button class="btn-generate" id="btnGenerate" onclick="generateArticle()">✨ 生成文章</button>
+        <span class="status-msg" id="statusMsg"></span>
+        <span class="input-hint">输入要学习的雅思词汇，AI 自动生成包含这些词汇的文章</span>
+      </div>
+    </div>
+
+    <!-- 故事区 -->
+    <div class="title-row">
+      <h1 class="story-title" id="storyTitle"></h1>
+      <button class="btn-translate" id="btnTranslate" onclick="toggleTranslation()" style="display:none">📖 全文翻译</button>
+    </div>
+
+    <div class="story-content" id="storyContent"></div>
+
+  </div>
+
+  <!-- ====== 右栏 ====== -->
+  <div class="right-col">
+
+    <!-- 释义卡片 -->
+    <div class="card-wrapper" id="cardWrapper">
+      <div class="card" id="card">
+        <div class="card-word" id="cardWord"></div>
+        <div class="card-phonetic" id="cardPhonetic"></div>
+        <div class="card-meaning" id="cardMeaning"></div>
+        <div class="card-example" id="cardExample"></div>
+      </div>
+    </div>
+
+    <!-- 全文翻译 -->
+    <div class="translation-box" id="translationBox" style="display:none"></div>
+
+    <!-- 词汇速查 -->
+    <div class="section-label">词汇速查</div>
+    <div class="vocab-grid" id="vocabGrid"></div>
+
+  </div>
+
+</div>
+
+<script>
+// ========== 词汇数据 ==========
+let vocabData = {};
+
+// ========== DOM 引用 ==========
+const storyTitle = document.getElementById('storyTitle');
+const storyContent = document.getElementById('storyContent');
+const cardWrapper = document.getElementById('cardWrapper');
+const cardWord = document.getElementById('cardWord');
+const cardPhonetic = document.getElementById('cardPhonetic');
+const cardMeaning = document.getElementById('cardMeaning');
+const cardExample = document.getElementById('cardExample');
+const vocabGrid = document.getElementById('vocabGrid');
+const btnGenerate = document.getElementById('btnGenerate');
+const statusMsg = document.getElementById('statusMsg');
+const btnTranslate = document.getElementById('btnTranslate');
+const translationBox = document.getElementById('translationBox');
+
+let activeKey = null;
+let translationVisible = false;
+let translationLoaded = false;
+
+// ========== 释义卡片逻辑 ==========
+function showCard(key) {
+  const data = vocabData[key];
+  if (!data) return;
+
+  if (activeKey === key && cardWrapper.classList.contains('show')) {
+    hideCard();
+    return;
+  }
+
+  cardWord.textContent = key;
+  cardPhonetic.textContent = data.phonetic;
+  cardMeaning.textContent = data.meaning;
+  cardExample.textContent = data.example;
+
+  cardWrapper.classList.add('show');
+
+  document.querySelectorAll('.word.active, .vocab-chip.active').forEach(el => el.classList.remove('active'));
+  const wordEl = document.querySelector(`.word[data-key="${CSS.escape(key)}"]`);
+  const chipEl = document.querySelector(`.vocab-chip[data-key="${CSS.escape(key)}"]`);
+  if (wordEl) wordEl.classList.add('active');
+  if (chipEl) chipEl.classList.add('active');
+
+  activeKey = key;
+
+  setTimeout(() => {
+    document.getElementById('card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  }, 100);
+}
+
+function hideCard() {
+  cardWrapper.classList.remove('show');
+  document.querySelectorAll('.word.active, .vocab-chip.active').forEach(el => el.classList.remove('active'));
+  activeKey = null;
+}
+
+// ========== 绑定单词点击 & 构建词汇格子 ==========
+function bindWordClicks() {
+  document.querySelectorAll('.word').forEach(el => {
+    el.addEventListener('click', () => showCard(el.dataset.key));
+  });
+}
+
+function buildVocabGrid() {
+  vocabGrid.innerHTML = '';
+  Object.keys(vocabData).forEach(key => {
+    const chip = document.createElement('span');
+    chip.className = 'vocab-chip';
+    chip.dataset.key = key;
+    chip.textContent = key;
+    chip.addEventListener('click', () => showCard(key));
+    vocabGrid.appendChild(chip);
+  });
+}
+
+// ========== 渲染整篇文章 ==========
+function renderArticle(title, paragraphs) {
+  storyTitle.textContent = title;
+  storyContent.innerHTML = paragraphs
+    .map(p => `<p>${p}</p>`)
+    .join('\n');
+  bindWordClicks();
+  buildVocabGrid();
+  hideCard();
+  wrapPlainWords();
+  btnTranslate.style.display = 'inline-block';
+  translationBox.style.display = 'none';
+  translationVisible = false;
+  translationLoaded = false;
+}
+
+// ========== API 调用封装 ==========
+// ★ API 格式切换点：公司用 Anthropic 格式，个人 DeepSeek 用 OpenAI 格式
+async function callAPI(systemPrompt, userPrompt, temperature = 0.3) {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const apiEndpoint = document.getElementById('apiEndpoint').value.trim();
+
+  // ---- 公司内网 (Anthropic 格式) ----
+  const headers = {
+    'Content-Type': 'application/json',
+    'x-api-key': apiKey,
+    'anthropic-version': '2023-06-01'
+  };
+  const body = JSON.stringify({
+    model: 'corp-dgov/anthropic/deepseek-v4-flash',
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userPrompt }],
+    temperature: temperature,
+    max_tokens: 4096
+  });
+
+  // ---- 个人 DeepSeek (OpenAI 格式) 切换时替换上面 ----
+  // const headers = {
+  //   'Content-Type': 'application/json',
+  //   'Authorization': `Bearer ${apiKey}`
+  // };
+  // const body = JSON.stringify({
+  //   model: 'deepseek-chat',
+  //   messages: [
+  //     { role: 'system', content: systemPrompt },
+  //     { role: 'user', content: userPrompt }
+  //   ],
+  //   temperature: temperature,
+  //   max_tokens: 4096
+  // });
+
+  const response = await fetch(apiEndpoint, {
+    method: 'POST',
+    headers: headers,
+    body: body
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`API 请求失败 (${response.status}): ${errText}`);
+  }
+
+  const result = await response.json();
+  let content;
+  if (result.content) {
+    const textBlock = result.content.find(b => b.type === 'text');
+    content = textBlock ? textBlock.text : null;
+  } else if (result.choices && result.choices[0]) {
+    content = result.choices[0].message.content;
+  }
+  if (!content) throw new Error('无法解析 API 返回格式');
+  return content.trim();
+}
+
+// ========== AI 生成文章 ==========
+async function generateArticle() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  const rawInput = document.getElementById('vocabInput').value.trim();
+
+  if (!apiKey) {
+    setStatus('请先填写 API Key', 'red');
+    return;
+  }
+  if (!rawInput) {
+    setStatus('请先输入词汇', 'red');
+    return;
+  }
+
+  const words = rawInput.split(/[,，\s]+/).filter(Boolean);
+  if (words.length === 0) {
+    setStatus('未识别到有效词汇', 'red');
+    return;
+  }
+
+  btnGenerate.disabled = true;
+  setStatus('正在生成...', '#3C3489', true);
+
+  const systemPrompt = `You are an IELTS article generator. Given a list of vocabulary words, you generate a short English article (3-4 paragraphs, IELTS Band 6-7 difficulty) that naturally incorporates ALL of the provided words.
+
+You MUST respond with ONLY valid JSON. No markdown, no explanation. The JSON format:
+
+{
+  "title": "Article title",
+  "paragraphs": [
+    "Paragraph text with <<word>> markers around each vocabulary word.",
+    "Another paragraph with <<anotherword>> marked."
+  ],
+  "vocab": {
+    "word": {"phonetic": "/wɜːd/", "meaning": "中文释义", "example": "An example sentence using the word."}
+  }
+}
+
+Rules:
+- Wrap EVERY occurrence of each vocabulary word in paragraphs with <<word>> markers.
+- Provide Chinese meaning for each word.
+- The "example" field must be a DIFFERENT sentence from the article text.
+- All ${words.length} words MUST appear in the article.`;
+
+  const userPrompt = `Vocabulary words: ${words.join(', ')}`;
+
+  try {
+    const content = await callAPI(systemPrompt, userPrompt, 0.8);
+
+    let jsonStr = content.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+    const data = JSON.parse(jsonStr);
+
+    const paragraphs = data.paragraphs.map(p =>
+      p.replace(/<<(\w+)>>/g, (_, word) =>
+        `<span class="word" data-key="${word.toLowerCase()}">${word}</span>`
+      )
+    );
+
+    vocabData = data.vocab;
+    renderArticle(data.title, paragraphs);
+    setStatus(`已生成，包含 ${Object.keys(data.vocab).length} 个词汇`, '#2a7d2a');
+
+  } catch (err) {
+    console.error(err);
+    setStatus(`生成失败：${err.message}`, 'red');
+  } finally {
+    btnGenerate.disabled = false;
+  }
+}
+
+// ========== 全部单词可点击 ==========
+function wrapPlainWords() {
+  storyContent.querySelectorAll('p').forEach(p => {
+    wrapTextNodes(p);
+  });
+}
+
+function wrapTextNodes(el) {
+  for (const child of [...el.childNodes]) {
+    if (child.nodeType === Node.TEXT_NODE) {
+      const fragment = document.createDocumentFragment();
+      const parts = child.textContent.split(/(\s+)/);
+      for (const part of parts) {
+        if (/^\s+$/.test(part)) {
+          fragment.appendChild(document.createTextNode(part));
+        } else {
+          const match = part.match(/^([\p{P}\p{S}]*)([\w'-]+)([\p{P}\p{S}]*)$/u);
+          if (match) {
+            if (match[1]) fragment.appendChild(document.createTextNode(match[1]));
+            const span = document.createElement('span');
+            span.className = 'clickable-word';
+            span.textContent = match[2];
+            span.addEventListener('click', (e) => {
+              e.stopPropagation();
+              lookupWord(match[2].toLowerCase());
+            });
+            fragment.appendChild(span);
+            if (match[3]) fragment.appendChild(document.createTextNode(match[3]));
+          } else {
+            fragment.appendChild(document.createTextNode(part));
+          }
+        }
+      }
+      child.replaceWith(fragment);
+    } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('word')) {
+      wrapTextNodes(child);
+    }
+  }
+}
+
+// ========== 查单词 ==========
+async function lookupWord(word) {
+  if (!word || word.length < 2) return;
+  if (activeKey === word && cardWrapper.classList.contains('show')) {
+    hideCard();
+    return;
+  }
+
+  cardWord.textContent = word;
+  cardPhonetic.textContent = '';
+  cardMeaning.innerHTML = '<span class="spinner"></span><span style="color:#999">查询中...</span>';
+  cardExample.textContent = '';
+  cardWrapper.classList.add('show');
+
+  document.querySelectorAll('.word.active, .vocab-chip.active').forEach(el => el.classList.remove('active'));
+  activeKey = word;
+
+  try {
+    const systemPrompt = 'You are a dictionary. Respond with ONLY valid JSON: {"phonetic":"/.../","meaning":"中文释义","example":"An English example sentence using the word."}';
+    const content = await callAPI(systemPrompt, `Define the word: "${word}"`);
+    const jsonStr = content.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
+    const data = JSON.parse(jsonStr);
+
+    cardPhonetic.textContent = data.phonetic || '';
+    cardMeaning.innerHTML = data.meaning || '';
+    cardExample.textContent = data.example || '';
+  } catch (err) {
+    console.error(err);
+    cardMeaning.innerHTML = `<span style="color:#999">查询失败：${err.message}</span>`;
+    cardPhonetic.textContent = '';
+    cardExample.textContent = '';
+  }
+}
+
+// ========== 全文翻译 ==========
+async function toggleTranslation() {
+  if (translationVisible) {
+    translationBox.style.display = 'none';
+    translationVisible = false;
+    return;
+  }
+
+  translationBox.style.display = 'block';
+  translationVisible = true;
+
+  if (translationLoaded) return;
+
+  translationBox.innerHTML = '<span class="spinner"></span><span style="color:#999">翻译中...</span>';
+
+  try {
+    const articleText = storyContent.textContent.trim();
+    const content = await callAPI(
+      'You are a translator. Translate the following English article to Chinese. Output ONLY the Chinese translation, no explanations.',
+      articleText
+    );
+    translationBox.innerHTML = content.replace(/\n/g, '<br>');
+    translationLoaded = true;
+  } catch (err) {
+    console.error(err);
+    translationBox.innerHTML = `<span style="color:#999">翻译失败：${err.message}</span>`;
+  }
+}
+
+function setStatus(text, color, showSpinner) {
+  statusMsg.style.display = 'inline';
+  statusMsg.style.color = color;
+  statusMsg.innerHTML = showSpinner
+    ? `<span class="spinner"></span>${text}`
+    : text;
+}
+
+// ========== 初始绑定 ==========
+bindWordClicks();
+buildVocabGrid();
+</script>
+</body>
+</html>
