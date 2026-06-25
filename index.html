@@ -1,1263 +1,1382 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
-<head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>记忆卡</title>
-<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 88 L15 50 Q-5 28 15 10 Q30 -2 50 20 Q70 -2 85 10 Q105 28 85 50 Z' fill='%23e74c3c'/></svg>">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-    background: #fff;
-    color: #333;
-    display: flex;
-    justify-content: center;
-    padding: 24px;
-  }
-
-  .container {
-    max-width: 1100px;
-    width: 100%;
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 24px;
-    align-items: start;
-  }
-
-  /* ====== 顶栏：API 配置 ====== */
-  .config-bar {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 0;
-    align-items: center;
-    flex-wrap: wrap;
-    grid-column: 1 / -1;
-  }
-
-  .config-bar label {
-    font-size: 12px;
-    color: #888;
-    white-space: nowrap;
-  }
-
-  .config-bar input {
-    flex: 1;
-    min-width: 140px;
-    padding: 7px 10px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    font-size: 13px;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .config-bar input:focus {
-    border-color: #3C3489;
-  }
-
-  /* ====== 左右两栏 ====== */
-  .left-col {
-    min-width: 0;
-  }
-
-  .right-col {
-    position: sticky;
-    top: 20px;
-    min-width: 0;
-  }
-
-  /* ====== 输入区域 ====== */
-  .input-section {
-    background: #f9f9fb;
-    border: 1px solid #e8e8ed;
-    border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 32px;
-  }
-
-  .input-section textarea {
-    width: 100%;
-    height: 72px;
-    border: 1px solid #ddd;
-    border-radius: 6px;
-    padding: 10px 12px;
-    font-size: 14px;
-    font-family: inherit;
-    resize: vertical;
-    outline: none;
-    transition: border-color 0.2s;
-  }
-
-  .input-section textarea:focus {
-    border-color: #3C3489;
-  }
-
-  .input-row {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    margin-top: 12px;
-  }
-
-  .btn-generate {
-    padding: 9px 22px;
-    background: #3C3489;
-    color: #fff;
-    border: none;
-    border-radius: 6px;
-    font-size: 14px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s;
-    white-space: nowrap;
-  }
-
-  .btn-generate:hover { background: #2d266e; }
-  .btn-generate:disabled { background: #a099d4; cursor: not-allowed; }
-
-  .input-hint {
-    font-size: 12px;
-    color: #999;
-  }
-
-  .status-msg {
-    font-size: 13px;
-    color: #3C3489;
-    margin-left: 8px;
-    display: none;
-  }
-
-  /* ====== 故事标题 ====== */
-  .story-title {
-    font-size: 24px;
-    font-weight: 700;
-    color: #1a1a1a;
-    line-height: 1.5;
-    margin-bottom: 0;
-  }
-
-  .title-row {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 28px;
-    flex-wrap: wrap;
-  }
-
-  .btn-translate {
-    padding: 6px 14px;
-    background: #fff;
-    border: 1px solid #d0d0d0;
-    border-radius: 6px;
-    font-size: 13px;
-    color: #666;
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all 0.2s;
-  }
-
-  .btn-translate:hover {
-    border-color: #a099d4;
-    color: #3C3489;
-    background: #f8f7ff;
-  }
-
-  /* ====== 故事正文 ====== */
-  .story-content {
-    font-size: 15px;
-    line-height: 1.9;
-    color: #444;
-    margin-bottom: 32px;
-  }
-
-  .story-content p { margin-bottom: 18px; }
-
-  /* 高亮词汇 */
-  .word {
-    background: #EEEDFE;
-    color: #3C3489;
-    padding: 2px 6px;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: 500;
-    transition: background 0.2s, color 0.2s;
-  }
-
-  .word:hover {
-    background: #3C3489;
-    color: #fff;
-  }
-
-  .word.active {
-    background: #3C3489;
-    color: #fff;
-  }
-
-  /* 普通单词可点击 */
-  .clickable-word {
-    cursor: pointer;
-    transition: background 0.15s, color 0.15s;
-  }
-
-  .clickable-word:hover {
-    background: #EEEDFE;
-    color: #3C3489;
-    border-radius: 2px;
-    padding: 1px 3px;
-    margin: 0 -3px;
-  }
-
-  /* ====== 翻译结果 ====== */
-  .translation-box {
-    background: #FFFBEB;
-    border-radius: 12px;
-    padding: 16px;
-    margin-bottom: 24px;
-    font-size: 14px;
-    line-height: 1.8;
-    color: #555;
-  }
-
-  /* ====== 释义卡片 ====== */
-  .card-wrapper {
-    max-height: 0;
-    overflow: hidden;
-    transition: max-height 0.4s ease;
-    margin-bottom: 0;
-  }
-
-  .card-wrapper.show {
-    max-height: 500px;
-    margin-bottom: 32px;
-  }
-
-  .card {
-    background: #f7f7f8;
-    border: 1px solid #e0e0e0;
-    border-radius: 12px;
-    padding: 24px 28px;
-  }
-
-  .card-word {
-    font-size: 28px;
-    font-weight: 700;
-    color: #3C3489;
-    margin-bottom: 6px;
-  }
-
-  .card-phonetic {
-    font-size: 15px;
-    color: #888;
-    margin-bottom: 12px;
-  }
-
-  .card-meaning {
-    font-size: 16px;
-    color: #333;
-    margin-bottom: 12px;
-    line-height: 1.6;
-  }
-
-  .card-example {
-    font-size: 15px;
-    color: #555;
-    font-style: italic;
-    line-height: 1.6;
-    border-left: 3px solid #EEEDFE;
-    padding-left: 12px;
-  }
-
-  /* ====== 底部 ====== */
-  .section-label {
-    font-size: 13px;
-    color: #999;
-    margin-bottom: 12px;
-    letter-spacing: 1px;
-  }
-
-  .vocab-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-
-  .vocab-chip {
-    padding: 8px 4px;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    font-size: 13px;
-    cursor: pointer;
-    color: #3C3489;
-    background: #fff;
-    transition: background 0.2s, color 0.2s, border-color 0.2s;
-    text-align: center;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
-
-  .vocab-chip:hover,
-  .vocab-chip.active {
-    background: #EEEDFE;
-    border-color: #3C3489;
-    color: #3C3489;
-  }
-
-  /* ====== 加载动画 ====== */
-  .spinner {
-    display: inline-block;
-    width: 14px;
-    height: 14px;
-    border: 2px solid #ccc;
-    border-top-color: #3C3489;
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    vertical-align: middle;
-    margin-right: 6px;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-      /* ====== 手机端响应式 ====== */
-      @media (max-width: 768px) {
-        body {
-          padding: 12px;
-        }
-
-        .container {
-          grid-template-columns: 1fr;
-          gap: 16px;
-        }
-
-        /* 右栏取消 sticky，正常流式排列 */
-        .right-col {
-          position: static;
-        }
-
-        /* API 配置栏：上下排列 */
-        .config-bar {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 6px;
-        }
-
-        .config-bar label {
-          margin-top: 6px;
-        }
-
-        .config-bar label:first-child {
-          margin-top: 0;
-        }
-
-        .config-bar input {
-          width: 100%;
-          min-width: 0;
-          height: 44px;
-          font-size: 16px;
-        }
-
-        /* 输入区域 */
-        .input-section {
-          padding: 12px;
-          margin-bottom: 20px;
-        }
-
-        .input-section textarea {
-          height: 88px;
-          font-size: 16px;
-        }
-
-        .input-row {
-          flex-direction: column;
-          align-items: stretch;
-          gap: 8px;
-        }
-
-        .btn-generate {
-          width: 100%;
-          height: 44px;
-          font-size: 16px;
-        }
-
-        .input-hint {
-          text-align: center;
-          font-size: 12px;
-        }
-
-        .status-msg {
-          text-align: center;
-          margin-left: 0;
-        }
-
-        /* 标题 */
-        .title-row {
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 10px;
-          margin-bottom: 20px;
-        }
-
-        .story-title {
-          font-size: 20px;
-        }
-
-        .btn-translate {
-          height: 44px;
-          font-size: 16px;
-        }
-
-        /* 正文 */
-        .story-content {
-          font-size: 14px;
-          line-height: 1.8;
-          margin-bottom: 20px;
-        }
-
-        /* 释义卡片 */
-        .card {
-          padding: 16px 18px;
-        }
-
-        .card-word {
-          font-size: 24px;
-        }
-
-        .card-meaning {
-          font-size: 14px;
-        }
-
-        .card-example {
-          font-size: 14px;
-        }
-
-        /* 词汇速查：每行 3 个 */
-        .vocab-grid {
-          grid-template-columns: repeat(3, 1fr);
-          gap: 6px;
-        }
-
-        .vocab-chip {
-          font-size: 12px;
-          padding: 10px 4px;
-        }
-      }
-	  /* ====== Supabase 统计栏 ====== */
-	  .supabase-bar {
-	    grid-column: 1 / -1;
-	    display: flex;
-	    gap: 16px;
-	    align-items: center;
-	    flex-wrap: wrap;
-	    background: #f0fdf4;
-	    border: 1px solid #bbf7d0;
-	    border-radius: 10px;
-	    padding: 12px 18px;
-	  }
-
-	  .supabase-bar .stat-item {
-	    font-size: 13px;
-	    color: #166534;
-	    white-space: nowrap;
-	  }
-
-	  .supabase-bar .stat-item strong {
-	    font-size: 18px;
-	    color: #15803d;
-	  }
-
-	  .supabase-bar .date-picker {
-	    padding: 6px 10px;
-	    border: 1px solid #86efac;
-	    border-radius: 6px;
-	    font-size: 13px;
-	    outline: none;
-	    font-family: inherit;
-	    color: #166534;
-	    background: #fff;
-	    cursor: pointer;
-	  }
-
-	  .supabase-bar .date-picker:focus {
-	    border-color: #22c55e;
-	  }
-
-	  .supabase-bar .btn-today {
-	    padding: 6px 14px;
-	    background: #fff;
-	    border: 1px solid #86efac;
-	    border-radius: 6px;
-	    font-size: 13px;
-	    color: #166534;
-	    cursor: pointer;
-	    white-space: nowrap;
-	    transition: all 0.2s;
-	  }
-
-	  .supabase-bar .btn-today:hover {
-	    background: #dcfce7;
-	    border-color: #22c55e;
-	  }
-
-	  .supabase-bar .history-badge {
-	    font-size: 11px;
-	    background: #fef3c7;
-	    color: #92400e;
-	    padding: 3px 8px;
-	    border-radius: 10px;
-	    white-space: nowrap;
-	  }
-
-	  .supabase-input {
-	    width: 180px;
-	    padding: 7px 10px;
-	    border: 1px solid #ddd;
-	    border-radius: 6px;
-	    font-size: 13px;
-	    outline: none;
-	    transition: border-color 0.2s;
-	  }
-
-	  .supabase-input:focus {
-	    border-color: #3C3489;
-	  }
-
-	  /* Supabase 配置行 */
-	  .supabase-config-row {
-	    display: flex;
-	    gap: 8px;
-	    align-items: center;
-	    flex-wrap: wrap;
-	  }
-
-	  .supabase-config-row label {
-	    font-size: 11px;
-	    color: #888;
-	    white-space: nowrap;
-	  }
-
-	  /* ====== 手机端：Supabase 栏 ====== */
-	  @media (max-width: 768px) {
-	    .supabase-bar {
-	      flex-direction: column;
-	      align-items: stretch;
-	      gap: 8px;
-	      padding: 10px 12px;
-	    }
-
-	    .supabase-bar .stat-item {
-	      text-align: center;
-	    }
-
-	    .supabase-bar .date-picker {
-	      width: 100%;
-	      height: 44px;
-	      font-size: 16px;
-	    }
-
-	    .supabase-bar .btn-today {
-	      height: 44px;
-	      font-size: 16px;
-	    }
-
-	    .supabase-input {
-	      width: 100%;
-	      min-width: 0;
-	      height: 44px;
-	      font-size: 16px;
-	    }
-
-	    .supabase-config-row {
-	      flex-direction: column;
-	      align-items: stretch;
-	    }
-	  }
-	</style>
-	<!-- Supabase JS 库将在首次需要时动态加载，避免阻塞核心功能 -->
-</head>
-<body>
-<div class="container">
-
-  <!-- ====== API 配置栏 ====== -->
-  <!--
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>记忆卡</title>
+        <link
+            rel="icon"
+            href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><path d='M50 88 L15 50 Q-5 28 15 10 Q30 -2 50 20 Q70 -2 85 10 Q105 28 85 50 Z' fill='%23e74c3c'/></svg>"
+        />
+        <style>
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+
+            body {
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+                background: #fff;
+                color: #333;
+                display: flex;
+                justify-content: center;
+                padding: 24px;
+            }
+
+            .container {
+                max-width: 1100px;
+                width: 100%;
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 24px;
+                align-items: start;
+            }
+
+            /* ====== 顶栏：API 配置 ====== */
+            .config-bar {
+                display: flex;
+                gap: 10px;
+                margin-bottom: 0;
+                align-items: center;
+                flex-wrap: wrap;
+                grid-column: 1 / -1;
+            }
+
+            .config-bar label {
+                font-size: 12px;
+                color: #888;
+                white-space: nowrap;
+            }
+
+            .config-bar input {
+                flex: 1;
+                min-width: 140px;
+                padding: 7px 10px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 13px;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+            .config-bar input:focus {
+                border-color: #3c3489;
+            }
+
+            /* ====== 左右两栏 ====== */
+            .left-col {
+                min-width: 0;
+            }
+
+            .right-col {
+                position: sticky;
+                top: 20px;
+                min-width: 0;
+            }
+
+            /* ====== 输入区域 ====== */
+            .input-section {
+                background: #f9f9fb;
+                border: 1px solid #e8e8ed;
+                border-radius: 10px;
+                padding: 20px;
+                margin-bottom: 32px;
+            }
+
+            .input-section textarea {
+                width: 100%;
+                height: 72px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                padding: 10px 12px;
+                font-size: 14px;
+                font-family: inherit;
+                resize: vertical;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+            .input-section textarea:focus {
+                border-color: #3c3489;
+            }
+
+            .input-row {
+                display: flex;
+                gap: 10px;
+                align-items: center;
+                margin-top: 12px;
+            }
+
+            .btn-generate {
+                padding: 9px 22px;
+                background: #3c3489;
+                color: #fff;
+                border: none;
+                border-radius: 6px;
+                font-size: 14px;
+                cursor: pointer;
+                font-weight: 500;
+                transition: background 0.2s;
+                white-space: nowrap;
+            }
+
+            .btn-generate:hover {
+                background: #2d266e;
+            }
+            .btn-generate:disabled {
+                background: #a099d4;
+                cursor: not-allowed;
+            }
+
+            .input-hint {
+                font-size: 12px;
+                color: #999;
+            }
+
+            .status-msg {
+                font-size: 13px;
+                color: #3c3489;
+                margin-left: 8px;
+                display: none;
+            }
+
+            /* ====== 故事标题 ====== */
+            .story-title {
+                font-family: Georgia, "Times New Roman", "Noto Serif", serif;
+                font-size: 22px;
+                font-weight: 400;
+                font-style: italic;
+                color: #2c2416;
+                line-height: 1.5;
+                margin-bottom: 12px;
+                letter-spacing: 0.02em;
+                padding-bottom: 12px;
+                border-bottom: 1px solid #c9b896;
+                display: inline-block;
+            }
+
+            .title-row {
+                display: flex;
+                align-items: center;
+                gap: 14px;
+                margin-bottom: 28px;
+                flex-wrap: wrap;
+            }
+
+            .btn-translate {
+                padding: 6px 14px;
+                background: #fff;
+                border: 1px solid #d0d0d0;
+                border-radius: 6px;
+                font-size: 13px;
+                color: #666;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.2s;
+            }
+
+            .btn-translate:hover {
+                border-color: #a099d4;
+                color: #3c3489;
+                background: #f8f7ff;
+            }
+
+            /* ====== 故事正文 ====== */
+            .story-content {
+                font-size: 15px;
+                line-height: 1.9;
+                color: #444;
+                margin-bottom: 32px;
+            }
+
+            .story-content p {
+                margin-bottom: 18px;
+            }
+
+            /* 高亮词汇 */
+            .word {
+                background: #eeedfe;
+                color: #3c3489;
+                padding: 2px 6px;
+                border-radius: 4px;
+                cursor: pointer;
+                font-weight: 500;
+                transition: background 0.2s, color 0.2s;
+            }
+
+            .word:hover {
+                background: #3c3489;
+                color: #fff;
+            }
+
+            .word.active {
+                background: #3c3489;
+                color: #fff;
+            }
+
+            /* 普通单词可点击 */
+            .clickable-word {
+                cursor: pointer;
+                transition: background 0.15s, color 0.15s;
+            }
+
+            .clickable-word:hover {
+                background: #eeedfe;
+                color: #3c3489;
+                border-radius: 2px;
+                padding: 1px 3px;
+                margin: 0 -3px;
+            }
+
+            /* ====== 翻译结果 ====== */
+            .translation-box {
+                background: #fffbeb;
+                border-radius: 12px;
+                padding: 16px;
+                margin-bottom: 24px;
+                font-size: 14px;
+                line-height: 1.8;
+                color: #555;
+            }
+
+            /* ====== 释义卡片 ====== */
+            .card-wrapper {
+                max-height: 0;
+                overflow: hidden;
+                transition: max-height 0.4s ease;
+                margin-bottom: 0;
+            }
+
+            .card-wrapper.show {
+                max-height: 500px;
+                margin-bottom: 32px;
+            }
+
+            .card {
+                background: #f7f7f8;
+                border: 1px solid #e0e0e0;
+                border-radius: 12px;
+                padding: 24px 28px;
+            }
+
+            .card-word {
+                font-size: 28px;
+                font-weight: 700;
+                color: #3c3489;
+                margin-bottom: 6px;
+            }
+
+            .card-phonetic {
+                font-size: 15px;
+                color: #888;
+                margin-bottom: 12px;
+            }
+
+            .card-meaning {
+                font-size: 16px;
+                color: #333;
+                margin-bottom: 12px;
+                line-height: 1.6;
+            }
+
+            .card-example {
+                font-size: 15px;
+                color: #555;
+                font-style: italic;
+                line-height: 1.6;
+                border-left: 3px solid #eeedfe;
+                padding-left: 12px;
+            }
+
+            .card-example-cn {
+                font-size: 14px;
+                color: #888;
+                line-height: 1.6;
+                margin-top: 6px;
+                padding-left: 12px;
+                border-left: 3px solid #e8e8e8;
+            }
+
+            /* ====== 底部 ====== */
+            .section-label {
+                font-size: 13px;
+                color: #999;
+                margin-bottom: 12px;
+                letter-spacing: 1px;
+            }
+
+            .vocab-grid {
+                display: grid;
+                grid-template-columns: repeat(4, 1fr);
+                gap: 8px;
+            }
+
+            .vocab-chip {
+                padding: 8px 4px;
+                border: 1px solid #ddd;
+                border-radius: 8px;
+                font-size: 13px;
+                cursor: pointer;
+                color: #3c3489;
+                background: #fff;
+                transition: background 0.2s, color 0.2s, border-color 0.2s;
+                text-align: center;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+
+            .vocab-chip:hover,
+            .vocab-chip.active {
+                background: #eeedfe;
+                border-color: #3c3489;
+                color: #3c3489;
+            }
+
+            /* ====== 加载动画 ====== */
+            .spinner {
+                display: inline-block;
+                width: 14px;
+                height: 14px;
+                border: 2px solid #ccc;
+                border-top-color: #3c3489;
+                border-radius: 50%;
+                animation: spin 0.6s linear infinite;
+                vertical-align: middle;
+                margin-right: 6px;
+            }
+
+            @keyframes spin {
+                to {
+                    transform: rotate(360deg);
+                }
+            }
+
+            /* ====== 手机端响应式 ====== */
+            @media (max-width: 768px) {
+                body {
+                    padding: 12px;
+                }
+
+                .container {
+                    grid-template-columns: 1fr;
+                    gap: 16px;
+                }
+
+                /* 右栏取消 sticky，正常流式排列 */
+                .right-col {
+                    position: static;
+                }
+
+                /* API 配置栏：上下排列 */
+                .config-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 6px;
+                }
+
+                .config-bar label {
+                    margin-top: 6px;
+                }
+
+                .config-bar label:first-child {
+                    margin-top: 0;
+                }
+
+                .config-bar input {
+                    width: 100%;
+                    min-width: 0;
+                    height: 44px;
+                    font-size: 16px;
+                }
+
+                /* 输入区域 */
+                .input-section {
+                    padding: 12px;
+                    margin-bottom: 20px;
+                }
+
+                .input-section textarea {
+                    height: 88px;
+                    font-size: 16px;
+                }
+
+                .input-row {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 8px;
+                }
+
+                .btn-generate {
+                    width: 100%;
+                    height: 44px;
+                    font-size: 16px;
+                }
+
+                .input-hint {
+                    text-align: center;
+                    font-size: 12px;
+                }
+
+                .status-msg {
+                    text-align: center;
+                    margin-left: 0;
+                }
+
+                /* 标题 */
+                .title-row {
+                    flex-direction: column;
+                    align-items: flex-start;
+                    gap: 10px;
+                    margin-bottom: 20px;
+                }
+
+                .story-title {
+                    font-size: 18px;
+                    background: none;
+                    -webkit-text-fill-color: #2c2416;
+                    border-bottom: 1px solid #c9b896;
+                }
+
+                .btn-translate {
+                    height: 44px;
+                    font-size: 16px;
+                }
+
+                /* 正文 */
+                .story-content {
+                    font-size: 14px;
+                    line-height: 1.8;
+                    margin-bottom: 20px;
+                }
+
+                /* 释义卡片 */
+                .card {
+                    padding: 16px 18px;
+                }
+
+                .card-word {
+                    font-size: 24px;
+                }
+
+                .card-meaning {
+                    font-size: 14px;
+                }
+
+                .card-example {
+                    font-size: 14px;
+                }
+
+                .card-example-cn {
+                    font-size: 13px;
+                }
+
+                /* 词汇速查：每行 3 个 */
+                .vocab-grid {
+                    grid-template-columns: repeat(3, 1fr);
+                    gap: 6px;
+                }
+
+                .vocab-chip {
+                    font-size: 12px;
+                    padding: 10px 4px;
+                }
+            }
+            /* ====== Supabase 统计栏 ====== */
+            .supabase-bar {
+                grid-column: 1 / -1;
+                display: flex;
+                gap: 16px;
+                align-items: center;
+                flex-wrap: wrap;
+                background: #f0fdf4;
+                border: 1px solid #bbf7d0;
+                border-radius: 10px;
+                padding: 12px 18px;
+            }
+
+            .supabase-bar .stat-item {
+                font-size: 13px;
+                color: #166534;
+                white-space: nowrap;
+            }
+
+            .supabase-bar .stat-item strong {
+                font-size: 18px;
+                color: #15803d;
+            }
+
+            .supabase-bar .date-picker {
+                padding: 6px 10px;
+                border: 1px solid #86efac;
+                border-radius: 6px;
+                font-size: 13px;
+                outline: none;
+                font-family: inherit;
+                color: #166534;
+                background: #fff;
+                cursor: pointer;
+            }
+
+            .supabase-bar .date-picker:focus {
+                border-color: #22c55e;
+            }
+
+            .supabase-bar .btn-today {
+                padding: 6px 14px;
+                background: #fff;
+                border: 1px solid #86efac;
+                border-radius: 6px;
+                font-size: 13px;
+                color: #166534;
+                cursor: pointer;
+                white-space: nowrap;
+                transition: all 0.2s;
+            }
+
+            .supabase-bar .btn-today:hover {
+                background: #dcfce7;
+                border-color: #22c55e;
+            }
+
+            .supabase-bar .history-badge {
+                font-size: 11px;
+                background: #fef3c7;
+                color: #92400e;
+                padding: 3px 8px;
+                border-radius: 10px;
+                white-space: nowrap;
+            }
+
+            .supabase-input {
+                width: 180px;
+                padding: 7px 10px;
+                border: 1px solid #ddd;
+                border-radius: 6px;
+                font-size: 13px;
+                outline: none;
+                transition: border-color 0.2s;
+            }
+
+            .supabase-input:focus {
+                border-color: #3c3489;
+            }
+
+            /* Supabase 配置行 */
+            .supabase-config-row {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .supabase-config-row label {
+                font-size: 11px;
+                color: #888;
+                white-space: nowrap;
+            }
+
+            /* ====== 手机端：Supabase 栏 ====== */
+            @media (max-width: 768px) {
+                .supabase-bar {
+                    flex-direction: column;
+                    align-items: stretch;
+                    gap: 8px;
+                    padding: 10px 12px;
+                }
+
+                .supabase-bar .stat-item {
+                    text-align: center;
+                }
+
+                .supabase-bar .date-picker {
+                    width: 100%;
+                    height: 44px;
+                    font-size: 16px;
+                }
+
+                .supabase-bar .btn-today {
+                    height: 44px;
+                    font-size: 16px;
+                }
+
+                .supabase-input {
+                    width: 100%;
+                    min-width: 0;
+                    height: 44px;
+                    font-size: 16px;
+                }
+
+                .supabase-config-row {
+                    flex-direction: column;
+                    align-items: stretch;
+                }
+            }
+        </style>
+        <!-- Supabase JS 库将在首次需要时动态加载，避免阻塞核心功能 -->
+    </head>
+    <body>
+        <div class="container">
+            <!-- ====== API 配置栏 ====== -->
+            <!--
     切换 API 看这里：
     公司内网 → Endpoint: http://192.168.27.4:18888/v1/messages   格式: Anthropic (x-api-key)
     个人 DeepSeek → Endpoint: https://api.deepseek.com/v1/chat/completions  格式: OpenAI (Bearer)
     切换时需要同步改下面 JS 中 callAPI() 的 headers 和 body 格式，搜索 "API 格式切换点"
   -->
-    <!-- sk-HD8xmuAHbN5toEGtGYYTiA -->
-  <div class="config-bar">
-    <label>API Key</label>
-    <input type="password" id="apiKey" value="sk-ed8ec76db0f94f1aa2356a095d0322a7" placeholder="sk-xxxxxxxxxxxxxxxx">
-    <label>Endpoint</label>
-    <input type="text" id="apiEndpoint" value="https://api.deepseek.com/v1/chat/completions" placeholder="https://api.deepseek.com/v1/chat/completions">
-    <span style="color:#ccc;margin:0 4px;">|</span>
-    <label>Supabase URL</label>
-    <input type="text" class="supabase-input" id="supabaseUrl" value="https://fxutrnscikdmfsb.supabase.co" placeholder="https://xxxxx.supabase.co">
-    <label>Key</label>
-    <input type="password" class="supabase-input" id="supabaseKey" value="sb_publishable__k9dnipeYsxDsIJI3QqsLg_kG8_rLxi" placeholder="eyJhbGci...">
-  </div>
-
-  <!-- ====== Supabase 统计 & 历史栏 ====== -->
-  <div class="supabase-bar">
-    <span class="stat-item">📅 已学 <strong id="statDays">0</strong> 天</span>
-    <span class="stat-item">📝 累计词汇 <strong id="statWords">0</strong> 个</span>
-    <input type="date" class="date-picker" id="datePicker" title="选择日期查看历史记录">
-    <button class="btn-today" id="btnToday" onclick="goToday()">📋 回到今天</button>
-    <span class="history-badge" id="historyBadge" style="display:none">查看历史</span>
-  </div>
-
-  <!-- ====== 左栏 ====== -->
-  <div class="left-col">
-
-    <!-- 词汇输入区 -->
-    <div class="input-section">
-      <textarea id="vocabInput" placeholder="输入词汇，用英文逗号或空格分隔，例如：&#10;peacock, magnificent, vivid, creature, plumage"></textarea>
-      <div class="input-row">
-        <button class="btn-generate" id="btnGenerate" onclick="generateArticle()">✨ 生成文章</button>
-        <span class="status-msg" id="statusMsg"></span>
-        <span class="input-hint">输入要学习的雅思词汇，AI 自动生成包含这些词汇的文章</span>
-      </div>
-    </div>
-
-    <!-- 故事区 -->
-    <div class="title-row">
-      <h1 class="story-title" id="storyTitle"></h1>
-      <button class="btn-translate" id="btnTranslate" onclick="toggleTranslation()" style="display:none">📖 全文翻译</button>
-    </div>
-
-    <div class="story-content" id="storyContent"></div>
-
-  </div>
-
-  <!-- ====== 右栏 ====== -->
-  <div class="right-col">
-
-    <!-- 释义卡片 -->
-    <div class="card-wrapper" id="cardWrapper">
-      <div class="card" id="card">
-        <div class="card-word" id="cardWord"></div>
-        <div class="card-phonetic" id="cardPhonetic"></div>
-        <div class="card-meaning" id="cardMeaning"></div>
-        <div class="card-example" id="cardExample"></div>
-      </div>
-    </div>
-
-    <!-- 全文翻译 -->
-    <div class="translation-box" id="translationBox" style="display:none"></div>
-
-    <!-- 词汇速查 -->
-    <div class="section-label">词汇速查</div>
-    <div class="vocab-grid" id="vocabGrid"></div>
-
-  </div>
-
-</div>
-
-<script>
-// ========== 词汇数据 ==========
-let vocabData = {};
-
-// ========== DOM 引用 ==========
-const storyTitle = document.getElementById('storyTitle');
-const storyContent = document.getElementById('storyContent');
-const cardWrapper = document.getElementById('cardWrapper');
-const cardWord = document.getElementById('cardWord');
-const cardPhonetic = document.getElementById('cardPhonetic');
-const cardMeaning = document.getElementById('cardMeaning');
-const cardExample = document.getElementById('cardExample');
-const vocabGrid = document.getElementById('vocabGrid');
-const btnGenerate = document.getElementById('btnGenerate');
-const statusMsg = document.getElementById('statusMsg');
-const btnTranslate = document.getElementById('btnTranslate');
-const translationBox = document.getElementById('translationBox');
-
-const supabaseUrlInput = document.getElementById('supabaseUrl');
-const supabaseKeyInput = document.getElementById('supabaseKey');
-const datePicker = document.getElementById('datePicker');
-const statDays = document.getElementById('statDays');
-const statWords = document.getElementById('statWords');
-const historyBadge = document.getElementById('historyBadge');
-const btnToday = document.getElementById('btnToday');
-
-let activeKey = null;
-let translationVisible = false;
-let translationLoaded = false;
-let supabase = null;
-let supabaseLoaded = false;
-let isViewingHistory = false;
-
-// ========== Supabase 动态加载（不阻塞核心功能） ==========
-function loadSupabaseScript() {
-  return new Promise((resolve) => {
-    if (supabaseLoaded && window.supabase) { resolve(true); return; }
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js';
-    script.onload = () => { supabaseLoaded = true; resolve(true); };
-    script.onerror = () => { console.warn('Supabase CDN 加载失败，存档功能不可用'); resolve(false); };
-    document.head.appendChild(script);
-  });
-}
-
-// ========== Supabase 初始化 ==========
-async function getSupabase() {
-  const url = supabaseUrlInput.value.trim();
-  const key = supabaseKeyInput.value.trim();
-  if (!url || !key || !url.startsWith('http')) return null;
-
-  // 动态加载 Supabase 库
-  if (!window.supabase) {
-    const loaded = await loadSupabaseScript();
-    if (!loaded) return null;
-  }
-
-  if (!supabase || supabase.supabaseUrl !== url) {
-    try {
-      supabase = window.supabase.createClient(url, key);
-      console.log('Supabase 已连接:', url);
-    } catch (e) {
-      console.error('Supabase 初始化失败:', e);
-      return null;
-    }
-  }
-  return supabase;
-}
-
-// ========== 获取今天的日期字符串 ==========
-function todayStr() {
-  const d = new Date();
-  return d.getFullYear() + '-' +
-    String(d.getMonth() + 1).padStart(2, '0') + '-' +
-    String(d.getDate()).padStart(2, '0');
-}
-
-// ========== 本地存储（主存储，离线可用） ==========
-const STORAGE_KEY = 'ielts_vocab_records';
-
-function loadLocalRecords() {
-  try {
-    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
-  } catch (e) {
-    return {};
-  }
-}
-
-function saveLocalRecords(records) {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
-}
-
-// ========== 存储每日记录（本地优先 + Supabase 云端同步）==========
-async function saveDailyRecord(words, articleText, articleTitle) {
-  const date = todayStr();
-  const wordsStr = words.join(',');
-  const articleFull = articleTitle + '\n\n' + articleText;
-
-  // 1) 始终存本地
-  const records = loadLocalRecords();
-  records[date] = { words: wordsStr, article: articleFull };
-  saveLocalRecords(records);
-  console.log('本地已保存:', date);
-
-  // 2) 尝试同步到 Supabase（失败静默跳过）
-  const sb = await getSupabase();
-  if (!sb) return;
-  try {
-    const { data: existing } = await sb.from('daily_records').select('id').eq('date', date).limit(1);
-    if (existing && existing.length > 0) {
-      await sb.from('daily_records').update({ words: wordsStr, article: articleFull }).eq('date', date);
-    } else {
-      await sb.from('daily_records').insert({ date, words: wordsStr, article: articleFull });
-    }
-    console.log('Supabase 已同步:', date);
-  } catch (err) {
-    console.warn('Supabase 同步失败（本地已保存）:', err.message);
-  }
-
-  updateStats();
-}
-
-// ========== 根据日期加载历史记录（本地优先）==========
-async function loadHistoryRecord(date) {
-  // 1) 先查本地
-  const records = loadLocalRecords();
-  const local = records[date];
-  if (local) {
-    displayRecord(date, local.words, local.article);
-    return;
-  }
-
-  // 2) 本地没有，尝试 Supabase
-  const sb = await getSupabase();
-  if (!sb) { alert(`${date} 没有学习记录（Supabase 未配置）`); return; }
-
-  try {
-    const { data, error } = await sb.from('daily_records').select('*').eq('date', date).limit(1);
-    if (error) throw error;
-    if (data && data.length > 0) {
-      displayRecord(date, data[0].words, data[0].article);
-      // 回写到本地
-      records[date] = { words: data[0].words, article: data[0].article };
-      saveLocalRecords(records);
-    } else {
-      alert(`${date} 没有学习记录`);
-    }
-  } catch (err) {
-    console.error('Supabase 查询失败:', err.message);
-    alert(`${date} 没有学习记录（网络不可用）`);
-  }
-}
-
-function displayRecord(date, wordsStr, articleStr) {
-  const words = wordsStr.split(',').map(w => w.trim()).filter(Boolean);
-  document.getElementById('vocabInput').value = words.join(', ');
-
-  const articleLines = articleStr.split('\n');
-  const title = articleLines[0] || '';
-  let bodyStart = 1;
-  while (bodyStart < articleLines.length && articleLines[bodyStart].trim() === '') {
-    bodyStart++;
-  }
-  const articleBody = articleLines.slice(bodyStart).join('\n') || '';
-
-  storyTitle.textContent = title;
-  const paragraphs = articleBody.split(/\n\s*\n/).filter(p => p.trim());
-  storyContent.innerHTML = paragraphs.length > 0
-    ? paragraphs.map(p => `<p>${p.replace(/\n/g, '<br>')}</p>`).join('\n')
-    : articleBody.replace(/\n/g, '<br>');
-
-  buildVocabGridFromList(words);
-  hideCard();
-  btnTranslate.style.display = 'inline-block';
-  translationBox.style.display = 'none';
-  translationVisible = false;
-  translationLoaded = false;
-  wrapPlainWords();
-
-  isViewingHistory = true;
-  historyBadge.style.display = 'inline-block';
-  historyBadge.textContent = `📅 ${date} 的记录`;
-  datePicker.value = date;
-  setStatus(`已加载 ${date} 的记录，包含 ${words.length} 个词汇`, '#166534');
-}
-
-// ========== 从词汇列表构建速查区 ==========
-function buildVocabGridFromList(words) {
-  vocabData = {};
-  words.forEach(w => {
-    const key = w.toLowerCase();
-    if (!vocabData[key]) {
-      vocabData[key] = { phonetic: '', meaning: '历史词汇 — 点击查看释义', example: '' };
-    }
-  });
-  buildVocabGrid();
-  bindWordClicks();
-}
-
-// ========== 更新统计（本地优先） ==========
-async function updateStats() {
-  const records = loadLocalRecords();
-  const dates = Object.keys(records);
-  statDays.textContent = dates.length;
-  let totalWords = 0;
-  dates.forEach(d => {
-    totalWords += records[d].words.split(',').filter(w => w.trim()).length;
-  });
-  statWords.textContent = totalWords;
-
-  // 后台尝试从 Supabase 补全统计（不计入主流程）
-  const sb = await getSupabase();
-  if (!sb) return;
-  try {
-    const { data } = await sb.from('daily_records').select('*');
-    if (data) {
-      const allDates = new Set(dates);
-      data.forEach(r => { allDates.add(r.date); });
-      statDays.textContent = allDates.size;
-      const wc = new Map();
-      dates.forEach(d => { wc.set(d, records[d].words.split(',').filter(w => w.trim()).length); });
-      data.forEach(r => { wc.set(r.date, r.words.split(',').filter(w => w.trim()).length); });
-      let tw = 0; wc.forEach(v => { tw += v; });
-      statWords.textContent = tw;
-    }
-  } catch (e) { /* ignore */ }
-}
-
-// ========== 回到今天 ==========
-function goToday() {
-  isViewingHistory = false;
-  historyBadge.style.display = 'none';
-  datePicker.value = '';
-  storyTitle.textContent = '';
-  storyContent.innerHTML = '';
-  vocabData = {};
-  buildVocabGrid();
-  bindWordClicks();
-  hideCard();
-  btnTranslate.style.display = 'none';
-  translationBox.style.display = 'none';
-  translationVisible = false;
-  translationLoaded = false;
-  document.getElementById('vocabInput').value = '';
-  setStatus('已回到今天，输入词汇开始学习吧', '#3C3489');
-}
-
-// ========== 释义卡片逻辑 ==========
-function showCard(key) {
-  const data = vocabData[key];
-  if (!data) return;
-
-  if (activeKey === key && cardWrapper.classList.contains('show')) {
-    hideCard();
-    return;
-  }
-
-  cardWord.textContent = key;
-  cardPhonetic.textContent = data.phonetic;
-  cardMeaning.textContent = data.meaning;
-  cardExample.textContent = data.example;
-
-  cardWrapper.classList.add('show');
-
-  document.querySelectorAll('.word.active, .vocab-chip.active').forEach(el => el.classList.remove('active'));
-  const wordEl = document.querySelector(`.word[data-key="${CSS.escape(key)}"]`);
-  const chipEl = document.querySelector(`.vocab-chip[data-key="${CSS.escape(key)}"]`);
-  if (wordEl) wordEl.classList.add('active');
-  if (chipEl) chipEl.classList.add('active');
-
-  activeKey = key;
-
-  setTimeout(() => {
-    document.getElementById('card').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }, 100);
-}
-
-function hideCard() {
-  cardWrapper.classList.remove('show');
-  document.querySelectorAll('.word.active, .vocab-chip.active').forEach(el => el.classList.remove('active'));
-  activeKey = null;
-}
-
-// ========== 绑定单词点击 & 构建词汇格子 ==========
-function bindWordClicks() {
-  document.querySelectorAll('.word').forEach(el => {
-    el.addEventListener('click', () => showCard(el.dataset.key));
-  });
-}
-
-function buildVocabGrid() {
-  vocabGrid.innerHTML = '';
-  Object.keys(vocabData).forEach(key => {
-    const chip = document.createElement('span');
-    chip.className = 'vocab-chip';
-    chip.dataset.key = key;
-    chip.textContent = key;
-    chip.addEventListener('click', () => showCard(key));
-    vocabGrid.appendChild(chip);
-  });
-}
-
-// ========== 渲染整篇文章 ==========
-function renderArticle(title, paragraphs) {
-  storyTitle.textContent = title;
-  storyContent.innerHTML = paragraphs
-    .map(p => `<p>${p}</p>`)
-    .join('\n');
-  bindWordClicks();
-  buildVocabGrid();
-  hideCard();
-  wrapPlainWords();
-  btnTranslate.style.display = 'inline-block';
-  translationBox.style.display = 'none';
-  translationVisible = false;
-  translationLoaded = false;
-}
-
-// ========== API 调用封装 ==========
-// ★ API 格式切换点：公司用 Anthropic 格式，个人 DeepSeek 用 OpenAI 格式
-async function callAPI(systemPrompt, userPrompt, temperature = 0.3) {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  const apiEndpoint = document.getElementById('apiEndpoint').value.trim();
-
-  // // ---- 公司内网 (Anthropic 格式) ----
-  // const headers = {
-  //   'Content-Type': 'application/json',
-  //   'x-api-key': apiKey,
-  //   'anthropic-version': '2023-06-01'
-  // };
-  // const body = JSON.stringify({
-  //   model: 'corp-dgov/anthropic/deepseek-v4-flash',
-  //   system: systemPrompt,
-  //   messages: [{ role: 'user', content: userPrompt }],
-  //   temperature: temperature,
-  //   max_tokens: 4096
-  // });
-
-  // ---- 个人 DeepSeek (OpenAI 格式) 切换时替换上面 ----
-  const headers = {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${apiKey}`
-  };
-  const body = JSON.stringify({
-    model: 'deepseek-chat',
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'user', content: userPrompt }
-    ],
-    temperature: temperature,
-    max_tokens: 4096
-  });
-
-  const response = await fetch(apiEndpoint, {
-    method: 'POST',
-    headers: headers,
-    body: body
-  });
-
-  if (!response.ok) {
-    const errText = await response.text();
-    throw new Error(`API 请求失败 (${response.status}): ${errText}`);
-  }
-
-  const result = await response.json();
-  let content;
-  if (result.content) {
-    // 推理模型可能只返回 thinking，依次回退
-    let textBlock = result.content.find(b => b.type === 'text');
-    if (!textBlock) textBlock = result.content.find(b => b.type === 'thinking');
-    if (!textBlock) textBlock = result.content.find(b => b.type === 'output');
-    if (!textBlock) textBlock = result.content.find(b => b.text || b.thinking || b.content);
-    content = textBlock ? (textBlock.text || textBlock.thinking || textBlock.content || '') : null;
-  } else if (result.choices && result.choices[0]) {
-    content = result.choices[0].message.content;
-  }
-  if (!content) throw new Error('无法解析 API 返回格式');
-  return content.trim();
-}
-
-
-// ========== 从混杂文本中提取 JSON（推理模型会把思路和JSON混在一起） ==========
-function extractJSON(text) {
-  // 先去掉可能的代码围栏
-  let cleaned = text.replace(/^```(?:json)?\s*/, '').replace(/\s*```$/, '');
-  // 找到第一个 { 和最后一个 }，截取纯 JSON
-  const start = cleaned.indexOf('{');
-  const end = cleaned.lastIndexOf('}');
-  if (start !== -1 && end > start) {
-    cleaned = cleaned.slice(start, end + 1);
-  }
-  return cleaned;
-}
-
-// ========== AI 生成文章 ==========
-async function generateArticle() {
-  const apiKey = document.getElementById('apiKey').value.trim();
-  const rawInput = document.getElementById('vocabInput').value.trim();
-
-  if (!apiKey) {
-    setStatus('请先填写 API Key', 'red');
-    return;
-  }
-  if (!rawInput) {
-    setStatus('请先输入词汇', 'red');
-    return;
-  }
-
-  const words = rawInput.split(/[,，\s]+/).filter(Boolean);
-  if (words.length === 0) {
-    setStatus('未识别到有效词汇', 'red');
-    return;
-  }
-
-  btnGenerate.disabled = true;
-  setStatus('正在生成...', '#3C3489', true);
-
-  const systemPrompt = `You are an IELTS article generator. Given a list of vocabulary words, you generate a short English article (3-4 paragraphs, IELTS Band 6-7 difficulty) that naturally incorporates ALL of the provided words.
+            <!-- sk-HD8xmuAHbN5toEGtGYYTiA 公司-->
+            <!-- sk-ed8ec76db0f94f1aa2356a095d0322a7 个人-->
+            <div class="config-bar">
+                <label>API Key</label>
+                <input type="password" id="apiKey" value="" placeholder="sk-xxxxxxxxxxxxxxxx" />
+                <label>Endpoint</label>
+                <input
+                    type="text"
+                    id="apiEndpoint"
+                    value="https://api.deepseek.com/v1/chat/completions"
+                    placeholder="https://api.deepseek.com/v1/chat/completions"
+                />
+                <!-- <input type="text" id="apiEndpoint" value="http://192.168.27.4:18888/v1/messages" placeholder="http://192.168.27.4:18888/v1/messages"> -->
+                <span style="color: #ccc; margin: 0 4px">|</span>
+                <label>Supabase URL</label>
+                <input
+                    type="text"
+                    class="supabase-input"
+                    id="supabaseUrl"
+                    value="https://fxutrnscikdmfsb.supabase.co"
+                    placeholder="https://xxxxx.supabase.co"
+                />
+                <label>Key</label>
+                <input
+                    type="password"
+                    class="supabase-input"
+                    id="supabaseKey"
+                    value="sb_publishable__k9dnipeYsxDsIJI3QqsLg_kG8_rLxi"
+                    placeholder="eyJhbGci..."
+                />
+            </div>
+
+            <!-- ====== Supabase 统计 & 历史栏 ====== -->
+            <div class="supabase-bar">
+                <span class="stat-item">📅 已学 <strong id="statDays">0</strong> 天</span>
+                <span class="stat-item">📝 累计词汇 <strong id="statWords">0</strong> 个</span>
+                <input type="date" class="date-picker" id="datePicker" title="选择日期查看历史记录" />
+                <button class="btn-today" id="btnToday" onclick="goToday()">📋 回到今天</button>
+                <span class="history-badge" id="historyBadge" style="display: none">查看历史</span>
+            </div>
+
+            <!-- ====== 左栏 ====== -->
+            <div class="left-col">
+                <!-- 词汇输入区 -->
+                <div class="input-section">
+                    <textarea
+                        id="vocabInput"
+                        placeholder="输入词汇，用英文逗号或空格分隔，例如：&#10;peacock, magnificent, vivid, creature, plumage"
+                    ></textarea>
+                    <div class="input-row">
+                        <button class="btn-generate" id="btnGenerate" onclick="generateArticle()">✨ 生成文章</button>
+                        <span class="status-msg" id="statusMsg"></span>
+                        <!-- <span class="input-hint">输入要学习的雅思词汇，AI 自动生成包含这些词汇的文章</span> -->
+                    </div>
+                </div>
+
+                <!-- 故事区 -->
+                <div class="title-row">
+                    <h1 class="story-title" id="storyTitle"></h1>
+                    <button class="btn-translate" id="btnTranslate" onclick="toggleTranslation()" style="display: none">
+                        📖 全文翻译
+                    </button>
+                </div>
+
+                <div class="story-content" id="storyContent"></div>
+            </div>
+
+            <!-- ====== 右栏 ====== -->
+            <div class="right-col">
+                <!-- 释义卡片 -->
+                <div class="card-wrapper" id="cardWrapper">
+                    <div class="card" id="card">
+                        <div class="card-word" id="cardWord"></div>
+                        <div class="card-phonetic" id="cardPhonetic"></div>
+                        <div class="card-meaning" id="cardMeaning"></div>
+                        <div class="card-example" id="cardExample"></div>
+                        <div class="card-example-cn" id="cardExampleCn"></div>
+                    </div>
+                </div>
+
+                <!-- 全文翻译 -->
+                <div class="translation-box" id="translationBox" style="display: none"></div>
+
+                <!-- 词汇速查 -->
+                <div class="section-label">词汇速查</div>
+                <div class="vocab-grid" id="vocabGrid"></div>
+            </div>
+        </div>
+
+        <script>
+            // ========== 词汇数据 ==========
+            let vocabData = {};
+
+            // ========== DOM 引用 ==========
+            const storyTitle = document.getElementById("storyTitle");
+            const storyContent = document.getElementById("storyContent");
+            const cardWrapper = document.getElementById("cardWrapper");
+            const cardWord = document.getElementById("cardWord");
+            const cardPhonetic = document.getElementById("cardPhonetic");
+            const cardMeaning = document.getElementById("cardMeaning");
+            const cardExample = document.getElementById("cardExample");
+            const cardExampleCn = document.getElementById("cardExampleCn");
+            const vocabGrid = document.getElementById("vocabGrid");
+            const btnGenerate = document.getElementById("btnGenerate");
+            const statusMsg = document.getElementById("statusMsg");
+            const btnTranslate = document.getElementById("btnTranslate");
+            const translationBox = document.getElementById("translationBox");
+
+            const supabaseUrlInput = document.getElementById("supabaseUrl");
+            const supabaseKeyInput = document.getElementById("supabaseKey");
+            const datePicker = document.getElementById("datePicker");
+            const statDays = document.getElementById("statDays");
+            const statWords = document.getElementById("statWords");
+            const historyBadge = document.getElementById("historyBadge");
+            const btnToday = document.getElementById("btnToday");
+
+            let activeKey = null;
+            let translationVisible = false;
+            let translationLoaded = false;
+            let supabase = null;
+            let supabaseLoaded = false;
+            let isViewingHistory = false;
+
+            // ========== Supabase 动态加载（不阻塞核心功能） ==========
+            function loadSupabaseScript() {
+                return new Promise((resolve) => {
+                    if (supabaseLoaded && window.supabase) {
+                        resolve(true);
+                        return;
+                    }
+                    const script = document.createElement("script");
+                    script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.39.0/dist/umd/supabase.min.js";
+                    script.onload = () => {
+                        supabaseLoaded = true;
+                        resolve(true);
+                    };
+                    script.onerror = () => {
+                        console.warn("Supabase CDN 加载失败，存档功能不可用");
+                        resolve(false);
+                    };
+                    document.head.appendChild(script);
+                });
+            }
+
+            // ========== Supabase 初始化 ==========
+            async function getSupabase() {
+                const url = supabaseUrlInput.value.trim();
+                const key = supabaseKeyInput.value.trim();
+                if (!url || !key || !url.startsWith("http")) return null;
+
+                // 动态加载 Supabase 库
+                if (!window.supabase) {
+                    const loaded = await loadSupabaseScript();
+                    if (!loaded) return null;
+                }
+
+                if (!supabase || supabase.supabaseUrl !== url) {
+                    try {
+                        supabase = window.supabase.createClient(url, key);
+                        console.log("Supabase 已连接:", url);
+                    } catch (e) {
+                        console.error("Supabase 初始化失败:", e);
+                        return null;
+                    }
+                }
+                return supabase;
+            }
+
+            // ========== 获取今天的日期字符串 ==========
+            function todayStr() {
+                const d = new Date();
+                return (
+                    d.getFullYear() +
+                    "-" +
+                    String(d.getMonth() + 1).padStart(2, "0") +
+                    "-" +
+                    String(d.getDate()).padStart(2, "0")
+                );
+            }
+
+            // ========== 本地存储（主存储，离线可用） ==========
+            const STORAGE_KEY = "ielts_vocab_records";
+
+            function loadLocalRecords() {
+                try {
+                    return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {};
+                } catch (e) {
+                    return {};
+                }
+            }
+
+            function saveLocalRecords(records) {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+            }
+
+            // ========== 存储每日记录（本地优先 + Supabase 云端同步）==========
+            async function saveDailyRecord(words, articleText, articleTitle) {
+                const date = todayStr();
+                const wordsStr = words.join(",");
+                const articleFull = articleTitle + "\n\n" + articleText;
+
+                // 1) 始终存本地
+                const records = loadLocalRecords();
+                records[date] = {words: wordsStr, article: articleFull};
+                saveLocalRecords(records);
+                console.log("本地已保存:", date);
+
+                // 2) 尝试同步到 Supabase（失败静默跳过）
+                const sb = await getSupabase();
+                if (!sb) return;
+                try {
+                    const {data: existing} = await sb.from("daily_records").select("id").eq("date", date).limit(1);
+                    if (existing && existing.length > 0) {
+                        await sb.from("daily_records").update({words: wordsStr, article: articleFull}).eq("date", date);
+                    } else {
+                        await sb.from("daily_records").insert({date, words: wordsStr, article: articleFull});
+                    }
+                    console.log("Supabase 已同步:", date);
+                } catch (err) {
+                    console.warn("Supabase 同步失败（本地已保存）:", err.message);
+                }
+
+                updateStats();
+            }
+
+            // ========== 根据日期加载历史记录（本地优先）==========
+            async function loadHistoryRecord(date) {
+                // 1) 先查本地
+                const records = loadLocalRecords();
+                const local = records[date];
+                if (local) {
+                    displayRecord(date, local.words, local.article);
+                    return;
+                }
+
+                // 2) 本地没有，尝试 Supabase
+                const sb = await getSupabase();
+                if (!sb) {
+                    alert(`${date} 没有学习记录（Supabase 未配置）`);
+                    return;
+                }
+
+                try {
+                    const {data, error} = await sb.from("daily_records").select("*").eq("date", date).limit(1);
+                    if (error) throw error;
+                    if (data && data.length > 0) {
+                        displayRecord(date, data[0].words, data[0].article);
+                        // 回写到本地
+                        records[date] = {words: data[0].words, article: data[0].article};
+                        saveLocalRecords(records);
+                    } else {
+                        alert(`${date} 没有学习记录`);
+                    }
+                } catch (err) {
+                    console.error("Supabase 查询失败:", err.message);
+                    alert(`${date} 没有学习记录（网络不可用）`);
+                }
+            }
+
+            function displayRecord(date, wordsStr, articleStr) {
+                const words = wordsStr
+                .split(",")
+                .map((w) => w.trim())
+                .filter(Boolean);
+                document.getElementById("vocabInput").value = words.join(", ");
+
+                const articleLines = articleStr.split("\n");
+                const title = articleLines[0] || "";
+                let bodyStart = 1;
+                while (bodyStart < articleLines.length && articleLines[bodyStart].trim() === "") {
+                    bodyStart++;
+                }
+                const articleBody = articleLines.slice(bodyStart).join("\n") || "";
+
+                storyTitle.textContent = title;
+                const paragraphs = articleBody.split(/\n\s*\n/).filter((p) => p.trim());
+                storyContent.innerHTML =
+                    paragraphs.length > 0
+                        ? paragraphs.map((p) => `<p>${p.replace(/\n/g, "<br>")}</p>`).join("\n")
+                        : articleBody.replace(/\n/g, "<br>");
+
+                buildVocabGridFromList(words);
+                hideCard();
+                btnTranslate.style.display = "inline-block";
+                translationBox.style.display = "none";
+                translationVisible = false;
+                translationLoaded = false;
+                wrapPlainWords();
+
+                isViewingHistory = true;
+                historyBadge.style.display = "inline-block";
+                historyBadge.textContent = `📅 ${date} 的记录`;
+                datePicker.value = date;
+                setStatus(`已加载 ${date} 的记录，包含 ${words.length} 个词汇`, "#166534");
+            }
+
+            // ========== 从词汇列表构建速查区 ==========
+            function buildVocabGridFromList(words) {
+                vocabData = {};
+                words.forEach((w) => {
+                    const key = w.toLowerCase();
+                    if (!vocabData[key]) {
+                        vocabData[key] = {phonetic: "", meaning: "历史词汇 — 点击查看释义", example: ""};
+                    }
+                });
+                buildVocabGrid();
+                bindWordClicks();
+            }
+
+            // ========== 更新统计（本地优先） ==========
+            async function updateStats() {
+                const records = loadLocalRecords();
+                const dates = Object.keys(records);
+                statDays.textContent = dates.length;
+                let totalWords = 0;
+                dates.forEach((d) => {
+                    totalWords += records[d].words.split(",").filter((w) => w.trim()).length;
+                });
+                statWords.textContent = totalWords;
+
+                // 后台尝试从 Supabase 补全统计（不计入主流程）
+                const sb = await getSupabase();
+                if (!sb) return;
+                try {
+                    const {data} = await sb.from("daily_records").select("*");
+                    if (data) {
+                        const allDates = new Set(dates);
+                        data.forEach((r) => {
+                            allDates.add(r.date);
+                        });
+                        statDays.textContent = allDates.size;
+                        const wc = new Map();
+                        dates.forEach((d) => {
+                            wc.set(d, records[d].words.split(",").filter((w) => w.trim()).length);
+                        });
+                        data.forEach((r) => {
+                            wc.set(r.date, r.words.split(",").filter((w) => w.trim()).length);
+                        });
+                        let tw = 0;
+                        wc.forEach((v) => {
+                            tw += v;
+                        });
+                        statWords.textContent = tw;
+                    }
+                } catch (e) {
+                    /* ignore */
+                }
+            }
+
+            // ========== 回到今天 ==========
+            function goToday() {
+                isViewingHistory = false;
+                historyBadge.style.display = "none";
+                datePicker.value = "";
+                storyTitle.textContent = "";
+                storyContent.innerHTML = "";
+                vocabData = {};
+                buildVocabGrid();
+                bindWordClicks();
+                hideCard();
+                btnTranslate.style.display = "none";
+                translationBox.style.display = "none";
+                translationVisible = false;
+                translationLoaded = false;
+                document.getElementById("vocabInput").value = "";
+                setStatus("已回到今天，输入词汇开始学习吧", "#3C3489");
+            }
+
+            // ========== 释义卡片逻辑 ==========
+            function showCard(key) {
+                const data = vocabData[key];
+                if (!data) {
+                    // vocabData 里没有（AI 用了变体/大小写），回退到 API 查词
+                    lookupWord(key);
+                    return;
+                }
+
+                if (activeKey === key && cardWrapper.classList.contains("show")) {
+                    hideCard();
+                    return;
+                }
+
+                cardWord.textContent = key;
+                cardPhonetic.textContent = data.phonetic;
+                cardMeaning.textContent = data.meaning;
+                cardExample.textContent = data.example;
+                cardExampleCn.textContent = data.example_cn || "";
+
+                cardWrapper.classList.add("show");
+
+                document
+                .querySelectorAll(".word.active, .vocab-chip.active")
+                .forEach((el) => el.classList.remove("active"));
+                const wordEl = document.querySelector(`.word[data-key="${CSS.escape(key)}"]`);
+                const chipEl = document.querySelector(`.vocab-chip[data-key="${CSS.escape(key)}"]`);
+                if (wordEl) wordEl.classList.add("active");
+                if (chipEl) chipEl.classList.add("active");
+
+                activeKey = key;
+
+                setTimeout(() => {
+                    document.getElementById("card").scrollIntoView({behavior: "smooth", block: "nearest"});
+                }, 100);
+            }
+
+            function hideCard() {
+                cardWrapper.classList.remove("show");
+                document
+                .querySelectorAll(".word.active, .vocab-chip.active")
+                .forEach((el) => el.classList.remove("active"));
+                activeKey = null;
+            }
+
+            // ========== 绑定单词点击 & 构建词汇格子 ==========
+            function bindWordClicks() {
+                document.querySelectorAll(".word").forEach((el) => {
+                    el.addEventListener("click", () => showCard(el.dataset.key));
+                });
+            }
+
+            function buildVocabGrid() {
+                vocabGrid.innerHTML = "";
+                Object.keys(vocabData).forEach((key) => {
+                    const chip = document.createElement("span");
+                    chip.className = "vocab-chip";
+                    chip.dataset.key = key;
+                    chip.textContent = key;
+                    chip.addEventListener("click", () => showCard(key));
+                    vocabGrid.appendChild(chip);
+                });
+            }
+
+            // ========== 渲染整篇文章 ==========
+            function renderArticle(title, paragraphs) {
+                storyTitle.textContent = title;
+                storyContent.innerHTML = paragraphs.map((p) => `<p>${p}</p>`).join("\n");
+                bindWordClicks();
+                buildVocabGrid();
+                hideCard();
+                wrapPlainWords();
+                btnTranslate.style.display = "inline-block";
+                translationBox.style.display = "none";
+                translationVisible = false;
+                translationLoaded = false;
+            }
+
+            // ========== API 调用封装 ==========
+            // ★ API 格式切换点：公司用 Anthropic 格式，个人 DeepSeek 用 OpenAI 格式
+            async function callAPI(systemPrompt, userPrompt, temperature = 0.3) {
+                const apiKey = document.getElementById("apiKey").value.trim();
+                const apiEndpoint = document.getElementById("apiEndpoint").value.trim();
+
+                // // ---- 公司内网 (Anthropic 格式) ----
+                // const headers = {
+                //   'Content-Type': 'application/json',
+                //   'x-api-key': apiKey,
+                //   'anthropic-version': '2023-06-01'
+                // };
+                // const body = JSON.stringify({
+                //   model: 'corp-dgov/anthropic/deepseek-v4-flash',
+                //   system: systemPrompt,
+                //   messages: [{ role: 'user', content: userPrompt }],
+                //   temperature: temperature,
+                //   max_tokens: 4096
+                // });
+
+                // ---- 个人 DeepSeek (OpenAI 格式) 切换时替换上面 ----
+                const headers = {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${apiKey}`,
+                };
+                const body = JSON.stringify({
+                    model: "deepseek-chat",
+                    messages: [
+                        {role: "system", content: systemPrompt},
+                        {role: "user", content: userPrompt},
+                    ],
+                    temperature: temperature,
+                    max_tokens: 4096,
+                });
+
+                const response = await fetch(apiEndpoint, {
+                    method: "POST",
+                    headers: headers,
+                    body: body,
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(`API 请求失败 (${response.status}): ${errText}`);
+                }
+
+                const result = await response.json();
+                let content;
+                if (result.content) {
+                    // 推理模型可能只返回 thinking，依次回退
+                    let textBlock = result.content.find((b) => b.type === "text");
+                    if (!textBlock) textBlock = result.content.find((b) => b.type === "thinking");
+                    if (!textBlock) textBlock = result.content.find((b) => b.type === "output");
+                    if (!textBlock) textBlock = result.content.find((b) => b.text || b.thinking || b.content);
+                    content = textBlock ? textBlock.text || textBlock.thinking || textBlock.content || "" : null;
+                } else if (result.choices && result.choices[0]) {
+                    content = result.choices[0].message.content;
+                }
+                if (!content) throw new Error("无法解析 API 返回格式");
+                return content.trim();
+            }
+
+            // ========== 从混杂文本中提取 JSON（推理模型会把思路和JSON混在一起） ==========
+            function extractJSON(text) {
+                // 先去掉可能的代码围栏
+                let cleaned = text.replace(/^```(?:json)?\s*/, "").replace(/\s*```$/, "");
+                // 找到第一个 { 和最后一个 }，截取纯 JSON
+                const start = cleaned.indexOf("{");
+                const end = cleaned.lastIndexOf("}");
+                if (start !== -1 && end > start) {
+                    cleaned = cleaned.slice(start, end + 1);
+                }
+                return cleaned;
+            }
+
+            // ========== AI 生成文章 ==========
+            async function generateArticle() {
+                const apiKey = document.getElementById("apiKey").value.trim();
+                const rawInput = document.getElementById("vocabInput").value.trim();
+
+                if (!apiKey) {
+                    setStatus("请先填写 API Key", "red");
+                    return;
+                }
+                if (!rawInput) {
+                    setStatus("请先输入词汇", "red");
+                    return;
+                }
+
+                const words = rawInput.split(/[,，\s]+/).filter(Boolean);
+                if (words.length === 0) {
+                    setStatus("未识别到有效词汇", "red");
+                    return;
+                }
+
+                btnGenerate.disabled = true;
+                setStatus("正在生成...", "#3C3489", true);
+
+                const systemPrompt = `You are an IELTS Reading passage writer. Given a list of vocabulary words, write a short passage (3-4 paragraphs, 250-350 words) that reads like an authentic IELTS Academic Reading text. You MUST incorporate ALL of the provided words naturally.
+
+Topic: Pick a real IELTS-style topic (e.g. environmental science, public health, education policy, technological innovation, cultural anthropology, urban planning, psychology, history of ideas). Do NOT write fiction or stories.
+
+Writing standards:
+- Semi-formal academic tone — objective, precise, authoritative
+- Clear essay structure: opening paragraph introduces the topic/phenomenon, body paragraphs develop with evidence/examples/cause-effect, closing paragraph synthesizes or looks forward
+- Use cohesive devices naturally (however, moreover, in contrast, as a result, it is worth noting that, etc.)
+- Vary sentence length — mix shorter declarative sentences with longer complex ones (subordinate clauses, relative clauses)
+- Paraphrase key ideas rather than repeating the same phrasing
+- Do NOT sound like a textbook or Wikipedia entry — maintain the lively, idea-driven style of real IELTS passages
 
 You MUST respond with ONLY valid JSON. No markdown, no explanation. The JSON format:
 
 {
-  "title": "Article title",
+  "title": "A refined, slightly literary title that captures the essence of the passage",
   "paragraphs": [
     "Paragraph text with <<word>> markers around each vocabulary word.",
     "Another paragraph with <<anotherword>> marked."
   ],
   "vocab": {
-    "word": {"phonetic": "/wɜːd/", "meaning": "中文释义", "example": "An example sentence using the word."}
+    "word": {"phonetic": "/wɜːd/", "meaning": "中文释义", "example": "An original English example sentence (different from the passage).", "example_cn": "例句的中文翻译"}
   }
 }
 
 Rules:
 - Wrap EVERY occurrence of each vocabulary word in paragraphs with <<word>> markers.
-- Provide Chinese meaning for each word.
-- The "example" field must be a DIFFERENT sentence from the article text.
-- All ${words.length} words MUST appear in the article.`;
+- Provide accurate Chinese meaning for each word.
+- The "example" field must be a DIFFERENT sentence from the passage text.
+- All ${words.length} words MUST appear in the passage.
+- Phonetic transcription must use standard IPA.`;
 
-  const userPrompt = `Vocabulary words: ${words.join(', ')}`;
+                const userPrompt = `Vocabulary words: ${words.join(", ")}`;
 
-  try {
-    const content = await callAPI(systemPrompt, userPrompt, 0.8);
+                try {
+                    const content = await callAPI(systemPrompt, userPrompt, 0.8);
 
-    let jsonStr = extractJSON(content);
-    const data = JSON.parse(jsonStr);
+                    let jsonStr = extractJSON(content);
+                    const data = JSON.parse(jsonStr);
 
-    const paragraphs = data.paragraphs.map(p =>
-      p.replace(/<<(\w+)>>/g, (_, word) =>
-        `<span class="word" data-key="${word.toLowerCase()}">${word}</span>`
-      )
-    );
+                    const paragraphs = data.paragraphs.map((p) =>
+                        p.replace(
+                            /<<([\w'-]+)>>/g,
+                            (_, word) => `<span class="word" data-key="${word.toLowerCase()}">${word}</span>`
+                        )
+                    );
 
-    vocabData = data.vocab;
-    renderArticle(data.title, paragraphs);
+                    // 统一转小写，避免 AI 返回大小写不一致导致点击无反应
+                    const rawVocab = data.vocab;
+                    vocabData = {};
+                    for (const [key, value] of Object.entries(rawVocab)) {
+                        vocabData[key.toLowerCase()] = value;
+                    }
+                    renderArticle(data.title, paragraphs);
 
-    // 自动存档到 Supabase
-    const articlePlain = data.paragraphs
-      .map(p => p.replace(/<<(\w+)>>/g, '$1'))
-      .join('\n\n');
-    saveDailyRecord(words, articlePlain, data.title);
+                    // 自动存档到 Supabase
+                    const articlePlain = data.paragraphs.map((p) => p.replace(/<<([\w'-]+)>>/g, "$1")).join("\n\n");
+                    saveDailyRecord(words, articlePlain, data.title);
 
-    isViewingHistory = false;
-    historyBadge.style.display = 'none';
-    datePicker.value = '';
+                    isViewingHistory = false;
+                    historyBadge.style.display = "none";
+                    datePicker.value = "";
 
-    setStatus(`已生成，包含 ${Object.keys(data.vocab).length} 个词汇`, '#2a7d2a');
+                    setStatus(`已生成，包含 ${Object.keys(data.vocab).length} 个词汇`, "#2a7d2a");
+                } catch (err) {
+                    console.error(err);
+                    setStatus(`生成失败：${err.message}`, "red");
+                } finally {
+                    btnGenerate.disabled = false;
+                }
+            }
 
-  } catch (err) {
-    console.error(err);
-    setStatus(`生成失败：${err.message}`, 'red');
-  } finally {
-    btnGenerate.disabled = false;
-  }
-}
+            // ========== 全部单词可点击 ==========
+            function wrapPlainWords() {
+                storyContent.querySelectorAll("p").forEach((p) => {
+                    wrapTextNodes(p);
+                });
+            }
 
-// ========== 全部单词可点击 ==========
-function wrapPlainWords() {
-  storyContent.querySelectorAll('p').forEach(p => {
-    wrapTextNodes(p);
-  });
-}
+            function wrapTextNodes(el) {
+                for (const child of [...el.childNodes]) {
+                    if (child.nodeType === Node.TEXT_NODE) {
+                        const fragment = document.createDocumentFragment();
+                        const parts = child.textContent.split(/(\s+)/);
+                        for (const part of parts) {
+                            if (/^\s+$/.test(part)) {
+                                fragment.appendChild(document.createTextNode(part));
+                            } else {
+                                const match = part.match(/^([\p{P}\p{S}]*)([\w'-]+)([\p{P}\p{S}]*)$/u);
+                                if (match) {
+                                    if (match[1]) fragment.appendChild(document.createTextNode(match[1]));
+                                    const span = document.createElement("span");
+                                    span.className = "clickable-word";
+                                    span.textContent = match[2];
+                                    span.addEventListener("click", (e) => {
+                                        e.stopPropagation();
+                                        lookupWord(match[2].toLowerCase());
+                                    });
+                                    fragment.appendChild(span);
+                                    if (match[3]) fragment.appendChild(document.createTextNode(match[3]));
+                                } else {
+                                    fragment.appendChild(document.createTextNode(part));
+                                }
+                            }
+                        }
+                        child.replaceWith(fragment);
+                    } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains("word")) {
+                        wrapTextNodes(child);
+                    }
+                }
+            }
 
-function wrapTextNodes(el) {
-  for (const child of [...el.childNodes]) {
-    if (child.nodeType === Node.TEXT_NODE) {
-      const fragment = document.createDocumentFragment();
-      const parts = child.textContent.split(/(\s+)/);
-      for (const part of parts) {
-        if (/^\s+$/.test(part)) {
-          fragment.appendChild(document.createTextNode(part));
-        } else {
-          const match = part.match(/^([\p{P}\p{S}]*)([\w'-]+)([\p{P}\p{S}]*)$/u);
-          if (match) {
-            if (match[1]) fragment.appendChild(document.createTextNode(match[1]));
-            const span = document.createElement('span');
-            span.className = 'clickable-word';
-            span.textContent = match[2];
-            span.addEventListener('click', (e) => {
-              e.stopPropagation();
-              lookupWord(match[2].toLowerCase());
+            // ========== 查单词 ==========
+            async function lookupWord(word) {
+                if (!word || word.length < 2) return;
+                if (activeKey === word && cardWrapper.classList.contains("show")) {
+                    hideCard();
+                    return;
+                }
+
+                cardWord.textContent = word;
+                cardPhonetic.textContent = "";
+                cardMeaning.innerHTML = '<span class="spinner"></span><span style="color:#999">查询中...</span>';
+                cardExample.textContent = "";
+                cardExampleCn.textContent = "";
+                cardWrapper.classList.add("show");
+
+                document
+                .querySelectorAll(".word.active, .vocab-chip.active")
+                .forEach((el) => el.classList.remove("active"));
+                activeKey = word;
+
+                try {
+                    const systemPrompt =
+                        'You are a dictionary. Respond with ONLY valid JSON: {"phonetic":"/.../","meaning":"中文释义","example":"An English example sentence.","example_cn":"例句的中文翻译"}';
+                    const content = await callAPI(systemPrompt, `Define the word: "${word}"`);
+                    const jsonStr = extractJSON(content);
+                    const data = JSON.parse(jsonStr);
+
+                    cardPhonetic.textContent = data.phonetic || "";
+                    cardMeaning.innerHTML = data.meaning || "";
+                    cardExample.textContent = data.example || "";
+                    cardExampleCn.textContent = data.example_cn || "";
+                } catch (err) {
+                    console.error(err);
+                    cardMeaning.innerHTML = `<span style="color:#999">查询失败：${err.message}</span>`;
+                    cardPhonetic.textContent = "";
+                    cardExample.textContent = "";
+                    cardExampleCn.textContent = "";
+                }
+            }
+
+            // ========== 全文翻译 ==========
+            async function toggleTranslation() {
+                if (translationVisible) {
+                    translationBox.style.display = "none";
+                    translationVisible = false;
+                    return;
+                }
+
+                translationBox.style.display = "block";
+                translationVisible = true;
+
+                if (translationLoaded) return;
+
+                translationBox.innerHTML = '<span class="spinner"></span><span style="color:#999">翻译中...</span>';
+
+                try {
+                    const articleText = storyContent.textContent.trim();
+                    const content = await callAPI(
+                        "You are a translator. Translate the following English article to Chinese. Output ONLY the Chinese translation, no explanations.",
+                        articleText
+                    );
+                    translationBox.innerHTML = content.replace(/\n/g, "<br>");
+                    translationLoaded = true;
+                } catch (err) {
+                    console.error(err);
+                    translationBox.innerHTML = `<span style="color:#999">翻译失败：${err.message}</span>`;
+                }
+            }
+
+            function setStatus(text, color, showSpinner) {
+                statusMsg.style.display = "inline";
+                statusMsg.style.color = color;
+                statusMsg.innerHTML = showSpinner ? `<span class="spinner"></span>${text}` : text;
+            }
+
+            // ========== 日期选择器：切换历史记录 ==========
+            datePicker.addEventListener("change", () => {
+                const selectedDate = datePicker.value;
+                if (!selectedDate) return;
+                if (selectedDate === todayStr()) {
+                    goToday();
+                    return;
+                }
+                loadHistoryRecord(selectedDate);
             });
-            fragment.appendChild(span);
-            if (match[3]) fragment.appendChild(document.createTextNode(match[3]));
-          } else {
-            fragment.appendChild(document.createTextNode(part));
-          }
-        }
-      }
-      child.replaceWith(fragment);
-    } else if (child.nodeType === Node.ELEMENT_NODE && !child.classList.contains('word')) {
-      wrapTextNodes(child);
-    }
-  }
-}
 
-// ========== 查单词 ==========
-async function lookupWord(word) {
-  if (!word || word.length < 2) return;
-  if (activeKey === word && cardWrapper.classList.contains('show')) {
-    hideCard();
-    return;
-  }
+            // ========== 初始绑定 ==========
+            bindWordClicks();
+            buildVocabGrid();
 
-  cardWord.textContent = word;
-  cardPhonetic.textContent = '';
-  cardMeaning.innerHTML = '<span class="spinner"></span><span style="color:#999">查询中...</span>';
-  cardExample.textContent = '';
-  cardWrapper.classList.add('show');
-
-  document.querySelectorAll('.word.active, .vocab-chip.active').forEach(el => el.classList.remove('active'));
-  activeKey = word;
-
-  try {
-    const systemPrompt = 'You are a dictionary. Respond with ONLY valid JSON: {"phonetic":"/.../","meaning":"中文释义","example":"An English example sentence using the word."}';
-    const content = await callAPI(systemPrompt, `Define the word: "${word}"`);
-    const jsonStr = extractJSON(content);
-    const data = JSON.parse(jsonStr);
-
-    cardPhonetic.textContent = data.phonetic || '';
-    cardMeaning.innerHTML = data.meaning || '';
-    cardExample.textContent = data.example || '';
-  } catch (err) {
-    console.error(err);
-    cardMeaning.innerHTML = `<span style="color:#999">查询失败：${err.message}</span>`;
-    cardPhonetic.textContent = '';
-    cardExample.textContent = '';
-  }
-}
-
-// ========== 全文翻译 ==========
-async function toggleTranslation() {
-  if (translationVisible) {
-    translationBox.style.display = 'none';
-    translationVisible = false;
-    return;
-  }
-
-  translationBox.style.display = 'block';
-  translationVisible = true;
-
-  if (translationLoaded) return;
-
-  translationBox.innerHTML = '<span class="spinner"></span><span style="color:#999">翻译中...</span>';
-
-  try {
-    const articleText = storyContent.textContent.trim();
-    const content = await callAPI(
-      'You are a translator. Translate the following English article to Chinese. Output ONLY the Chinese translation, no explanations.',
-      articleText
-    );
-    translationBox.innerHTML = content.replace(/\n/g, '<br>');
-    translationLoaded = true;
-  } catch (err) {
-    console.error(err);
-    translationBox.innerHTML = `<span style="color:#999">翻译失败：${err.message}</span>`;
-  }
-}
-
-function setStatus(text, color, showSpinner) {
-  statusMsg.style.display = 'inline';
-  statusMsg.style.color = color;
-  statusMsg.innerHTML = showSpinner
-    ? `<span class="spinner"></span>${text}`
-    : text;
-}
-
-// ========== 日期选择器：切换历史记录 ==========
-datePicker.addEventListener('change', () => {
-  const selectedDate = datePicker.value;
-  if (!selectedDate) return;
-  if (selectedDate === todayStr()) {
-    goToday();
-    return;
-  }
-  loadHistoryRecord(selectedDate);
-});
-
-// ========== 初始绑定 ==========
-bindWordClicks();
-buildVocabGrid();
-
-// 页面加载时初始化统计
-setTimeout(() => { updateStats(); }, 500);
-</script>
-</body>
+            // 页面加载时初始化统计
+            setTimeout(() => {
+                updateStats();
+            }, 500);
+        </script>
+    </body>
 </html>
